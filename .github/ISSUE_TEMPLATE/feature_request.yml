@@ -7,10 +7,10 @@ body:
     attributes:
       label: App
       options:
-        - GenOffice Docs (docs)
-        - GenOffice Sheets (sheets)
-        - GenOffice Slides (slides)
-        - GenOffice PDF (pdf)
+        - mAI Office Docs (docs)
+        - mAI Office Sheets (sheets)
+        - mAI Office Slides (slides)
+        - mAI Office PDF (pdf)
         - Shell / home screen
         - AI panel / providers
         - Whole suite

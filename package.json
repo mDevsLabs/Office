@@ -1,16 +1,16 @@
 {
-  "name": "genoffice",
+  "name": "@mdevs/mai-office",
   "version": "0.1.0",
   "private": true,
-  "description": "AI-native office suite (docs, sheets, slides, pdf)",
-  "license": "Apache-2.0",
+  "description": "Avec mAI Office, créez et imaginez plus rapidement !",
+  "license": "MIT",
   "engines": {
     "node": ">=20",
     "npm": ">=10"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/genspark-ai/genoffice.git"
+    "url": "git+https://github.com/mDevsLabs/mAI-Office.git"
   },
   "workspaces": [
     "apps/*",
