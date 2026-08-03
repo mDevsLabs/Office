@@ -50,7 +50,7 @@ jobs:
           ELECTRON_BUILDER_SKIP_NOTARIZE: true
         run: |
           cd apps/shell
-          echo '{"mac":{"hardenedRuntime":false},"dmg":{"sign":false}}' > electron-builder-unsigned.json
+          echo '{"electronVersion":"41.0.3","mac":{"hardenedRuntime":false},"dmg":{"sign":false}}' > electron-builder-unsigned.json
           npm run dist:mac -- --config electron-builder-unsigned.json
 
       - name: Upload macOS artifacts

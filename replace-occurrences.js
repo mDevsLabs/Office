@@ -18,41 +18,68 @@ function findFiles(dir, fileList = []) {
   return fileList;
 }
 
+const GIT_LINK_PATTERN = /mDevsLabs\/mAI-Office/g;
+
+function applyReplacements(line) {
+  return line
+    .replace(/GenSpark/gi, 'mAI Office')
+    .replace(/GenOffice/gi, 'mAI Office')
+    .replace(GIT_LINK_PATTERN, 'mDevsLabs/mAI-Office');
+}
+
 function getFilePreview(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     const lines = content.split('\n');
     const previewLines = [];
-    let gensparkCount = 0;
-    let genofficeCount = 0;
+    let totalCount = 0;
     let lineCount = 0;
 
     lines.forEach((line, index) => {
-      if (line.includes('import') || line.includes('export')) return;
+      const isImportExport = line.includes('import') || line.includes('export');
       const hasGenspark = line.match(/GenSpark/gi);
       const hasGenoffice = line.match(/GenOffice/gi);
-      if (hasGenspark || hasGenoffice) {
+      const hasGitLink = line.match(GIT_LINK_PATTERN);
+
+      const count = (hasGenspark ? hasGenspark.length : 0)
+        + (hasGenoffice ? hasGenoffice.length : 0)
+        + (hasGitLink ? hasGitLink.length : 0);
+
+      if (count === 0) return;
+
+      // Lignes import/export : affichage uniquement, pas de remplacement effectif
+      if (isImportExport) {
         if (lineCount < 10) {
-          const newLine = line.replace(/GenSpark/gi, 'mAI Office').replace(/GenOffice/gi, 'mAI Office');
           previewLines.push({
             lineNumber: index + 1,
             old: line.trim(),
-            new: newLine.trim()
+            new: applyReplacements(line).trim(),
+            displayOnly: true
           });
         }
-        gensparkCount += hasGenspark ? hasGenspark.length : 0;
-        genofficeCount += hasGenoffice ? hasGenoffice.length : 0;
         lineCount++;
+        return;
       }
+
+      if (lineCount < 10) {
+        previewLines.push({
+          lineNumber: index + 1,
+          old: line.trim(),
+          new: applyReplacements(line).trim(),
+          displayOnly: false
+        });
+      }
+      totalCount += count;
+      lineCount++;
     });
 
-    if (gensparkCount === 0 && genofficeCount === 0) {
+    if (totalCount === 0 && previewLines.filter(p => !p.displayOnly).length === 0) {
       return null;
     }
 
     return {
       filePath,
-      totalOccurrences: gensparkCount + genofficeCount,
+      totalOccurrences: totalCount,
       preview: previewLines,
       hasMore: lineCount > 10
     };
@@ -68,10 +95,11 @@ function replaceInFile(filePath) {
     let modified = false;
 
     const newLines = lines.map(line => {
+      // Lignes import/export : ne pas modifier (packages internes et dépendances)
       if (line.includes('import') || line.includes('export')) {
         return line;
       }
-      const newLine = line.replace(/GenSpark/gi, 'mAI Office').replace(/GenOffice/gi, 'mAI Office');
+      const newLine = applyReplacements(line);
       if (newLine !== line) modified = true;
       return newLine;
     });
@@ -99,7 +127,7 @@ async function main() {
   const files = findFiles(process.cwd());
   const filesToProcess = [];
 
-  console.log('Recherche des fichiers à modifier (hors import/export)...\n');
+  console.log('Recherche des fichiers à modifier (GenSpark, GenOffice, liens git mDevsLabs/mAI-Office — hors packages internes)...\n');
 
   for (const file of files) {
     const preview = getFilePreview(file);
@@ -121,15 +149,16 @@ async function main() {
 
   for (const preview of filesToProcess) {
     console.log(`\n--- ${preview.filePath} ---`);
-    console.log(`Occurrences totales: ${preview.totalOccurrences}`);
+    console.log(`Occurrences totales (hors import/export): ${preview.totalOccurrences}`);
     console.log('\nAperçu des modifications :');
     preview.preview.forEach(p => {
-      console.log(`  Ligne ${p.lineNumber}:`);
+      const tag = p.displayOnly ? ' [import/export — affiché seulement, non modifié]' : '';
+      console.log(`  Ligne ${p.lineNumber}:${tag}`);
       console.log(`    Avant: ${p.old}`);
       console.log(`    Après: ${p.new}`);
     });
     if (preview.hasMore) {
-      console.log(`  ... et ${preview.totalOccurrences - preview.preview.length} autres occurrences`);
+      console.log(`  ... et plus de lignes non affichées`);
     }
 
     const answer = await new Promise(resolve => {
