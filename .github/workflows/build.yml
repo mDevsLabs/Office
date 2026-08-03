@@ -56,7 +56,7 @@ jobs:
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: GenOffice-macOS
+          name: mAI Office-macOS
           path: apps/shell/release/**
           compression-level: 0
 
@@ -105,6 +105,6 @@ jobs:
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: GenOffice-Windows
+          name: mAI Office-Windows
           path: apps/shell/release/**
           compression-level: 0

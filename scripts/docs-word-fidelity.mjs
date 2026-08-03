@@ -234,7 +234,7 @@ class CDP {
 async function oursExport(docxPath, pdfPath, index) {
   const port = 19680 + (index % 40)
   const stamp = `${process.pid}-${index}`
-  const userData = join(tmpdir(), `genoffice-fidelity-${stamp}`)
+  const userData = join(tmpdir(), `mAI-office-fidelity-${stamp}`)
   mkdirSync(userData, { recursive: true })
   const docCopy = join(tmpdir(), `fidelity-${stamp}-${basename(docxPath)}`)
   copyFileSync(docxPath, docCopy)

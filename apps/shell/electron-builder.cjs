@@ -37,8 +37,8 @@ for (const rel of [
 
 /** @type {import('electron-builder').Configuration} */
 const config = {
-  appId: 'com.genoffice.app',
-  productName: 'GenOffice',
+  appId: 'com.maioffice.app',
+  productName: 'mAI Office',
   electronVersion: '41.7.1',
   directories: {
     output: 'release',

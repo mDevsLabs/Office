@@ -386,7 +386,7 @@ function ProjectPanel({ projects, selectedId, onSelect, onRefresh }: ProjectPane
 }
 
 // ── Account entry (bottom-left) ──────────────────────────
-// Currently the Genspark (gsk) login entry; to be upgraded to a signup/account system later.
+// Currently the mAI Office (gsk) login entry; to be upgraded to a signup/account system later.
 // Language switching also lives in this popup menu.
 
 const LOGIN_POLL_MS = 2500
@@ -739,7 +739,7 @@ function AccountEntry() {
             <>
               <span className="account-name">{email ? email.split('@')[0] : t('loggedIn')}</span>
               <span className="account-sub" title={email}>
-                {email || 'Genspark'}
+                {email || 'mAI Office'}
               </span>
             </>
           ) : (
@@ -1611,7 +1611,7 @@ export function Home() {
     <div className="home">
       <aside className="sidebar">
         <div className="sidebar-logo">
-          <img className="logo-lockup" src={logoLockup} alt="GenOffice" />
+          <img className="logo-lockup" src={logoLockup} alt="mAI Office" />
         </div>
 
         <nav className="sidebar-nav">

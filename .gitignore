@@ -30,3 +30,7 @@ electron-builder.env
 __pycache__/
 /notes/
 /MEMORY.md
+
+main.ts
+maiModels.ts
+aiModels.ts

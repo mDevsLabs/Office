@@ -46,7 +46,7 @@ const HOME_ID = 'home'
  */
 export class TabManager {
   private readonly tabs: TabRecord[] = [
-    { id: HOME_ID, kind: 'home', view: null, title: 'GenOffice' },
+    { id: HOME_ID, kind: 'home', view: null, title: 'mAI Office' },
   ]
   private activeId: string = HOME_ID
   private nextId = 1
@@ -124,7 +124,7 @@ export class TabManager {
       id,
       kind: 'docs',
       view,
-      title: openPath ? basename(openPath) : this.untitled('docs', 'GenOffice Docs'),
+      title: openPath ? basename(openPath) : this.untitled('docs', 'mAI Office Docs'),
       filePath: openPath,
     })
     this.activateTab(id)
@@ -142,7 +142,7 @@ export class TabManager {
       id,
       kind: 'sheets',
       view,
-      title: openPath ? basename(openPath) : this.untitled('sheets', 'GenOffice Sheets'),
+      title: openPath ? basename(openPath) : this.untitled('sheets', 'mAI Office Sheets'),
       filePath: openPath,
     })
     this.activateTab(id)
@@ -159,7 +159,7 @@ export class TabManager {
       id,
       kind: 'slides',
       view,
-      title: openPath ? basename(openPath) : this.untitled('slides', 'GenOffice Slides'),
+      title: openPath ? basename(openPath) : this.untitled('slides', 'mAI Office Slides'),
       filePath: openPath,
     })
     this.activateTab(id)

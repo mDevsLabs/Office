@@ -327,7 +327,7 @@ button {
   box-shadow: 0 2px 6px rgba(74, 92, 255, 0.25);
 }
 
-/* Genspark brand logo (Ribbon AI button / AI panel title / collapsed entry) */
+/* mAI Office brand logo (Ribbon AI button / AI panel title / collapsed entry) */
 .genspark-badge {
   display: block;
   width: 22px;
@@ -431,7 +431,7 @@ button {
   color: #232425;
 }
 
-/* Home-tab Genspark AI entry: black circular "+" badge with a dropdown caret,
+/* Home-tab mAI Office entry: black circular "+" badge with a dropdown caret,
    brand label below (mirrors the sheets Home ribbon). */
 /* AI feature buttons next to the entry: purple glyphs, label below */
 .ai-feature-icon {
@@ -477,7 +477,7 @@ button {
   background: var(--active-bg);
 }
 
-/* The Genspark AI entry keeps a black label even while the panel is open. */
+/* The mAI Office entry keeps a black label even while the panel is open. */
 .rb-big.ai-entry.active {
   color: var(--text);
 }
@@ -3481,7 +3481,7 @@ body.vib .slide-list {
 }
 
 /* AI quick actions anchored right above the slide card (mirrors the Home-tab
-   Genspark AI group); absolute so it doesn't distort the zoom-box extent.
+   mAI Office group); absolute so it doesn't distort the zoom-box extent.
    z-index lifts it over the Konva stage's transparent 160px bleed, which
    otherwise swallows the clicks */
 .stage-ai-bar {

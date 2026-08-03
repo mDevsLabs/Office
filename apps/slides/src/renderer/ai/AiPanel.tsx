@@ -112,7 +112,7 @@ interface ChatEntry {
   streaming?: boolean
   /** the run failed and this user message was rolled back out of the model context (#92) */
   undelivered?: boolean
-  /** the run failed because Genspark is signed out — render an inline sign-in button (#87) */
+  /** the run failed because mAI Office is signed out — render an inline sign-in button (#87) */
   loginRequired?: boolean
   tools?: ToolActivity[]
   /** Generation progress card (only one per turn, replaced in real time) */
@@ -1378,7 +1378,7 @@ export function AiPanel({
         onPointerDown={startResize}
         role="separator"
         aria-orientation="vertical"
-        aria-label="Genspark AI"
+        aria-label="mAI Office"
       />
       <div className="ai-panel-header">
         <span className="ai-panel-title">

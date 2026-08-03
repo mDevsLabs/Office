@@ -1,5 +1,5 @@
 /**
- * GenOffice Slides main process — pptx parsing/render-tree building/edit application/saving all live
+ * mAI Office Slides main process — pptx parsing/render-tree building/edit application/saving all live
  * here (Node side). The renderer only gets plain-data RenderSlide; edit intents are sent back
  * here to apply. Structure mirrors apps/docs: exports embeddable configure/register/start for
  * future shell reuse.
@@ -426,7 +426,7 @@ const AUTOSAVE_BACKOFF_TICKS = 10
 let autosaveRunning = false
 
 /**
- * Recovery drafts for never-saved decks (wcId → visible path in <Documents>/GenOffice):
+ * Recovery drafts for never-saved decks (wcId → visible path in <Documents>/mAI Office):
  * the sha1-keyed recovery copy needs session.path, so before the first save a freeze or
  * crash used to lose everything (#129). Removed on save, explicit discard, or clean close.
  */
@@ -652,9 +652,9 @@ async function openAndBuild(
   }
 }
 
-/** Directory where AI-generated drafts are saved: <Documents>/GenOffice/ */
+/** Directory where AI-generated drafts are saved: <Documents>/mAI Office/ */
 function getDraftsDir(): string {
-  return join(app.getPath('documents'), 'GenOffice')
+  return join(app.getPath('documents'), 'mAI Office')
 }
 
 /** Fallback draft filename: <untitled label>-YYYYMMDD-HHmmss.pptx */
@@ -695,7 +695,7 @@ function pickDraftPath(draftsDir: string, deckName?: string): string {
 }
 
 /**
- * Auto-save the draft to <Documents>/GenOffice/<name>.pptx after AI generation completes.
+ * Auto-save the draft to <Documents>/mAI Office/<name>.pptx after AI generation completes.
  * Append mode reuses the session's existing draft path (overwrite); replace mode generates a
  * new filename. On successful write, update session.path, pushRecent, slidesOpenedHook.
  * On write failure, degrade silently (console.warn) without blocking the in-memory session.
@@ -1292,7 +1292,7 @@ export function registerSlidesIpc(): void {
         console.log(
           `[cloud-slide] page generated: tier=${tier} model=${model} bytes=${bytes.length} ms=${Date.now() - started}`,
         )
-        const dir = join(app.getPath('temp'), 'genoffice-cloud-pages')
+        const dir = join(app.getPath('temp'), 'mAI-office-cloud-pages')
         mkdirSync(dir, { recursive: true })
         const path = join(dir, `${randomUUID()}.pptx`)
         await writeFile(path, bytes)
@@ -3646,7 +3646,7 @@ export function createSlidesWindow(openPath?: string | null): BrowserWindow {
   const win = new BrowserWindow({
     width: 1280,
     height: 840,
-    title: 'GenOffice Slides',
+    title: 'mAI Office Slides',
     ...(process.platform === 'darwin'
       ? { titleBarStyle: 'hiddenInset' as const }
       : {

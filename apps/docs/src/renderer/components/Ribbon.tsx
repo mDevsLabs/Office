@@ -1639,7 +1639,7 @@ export function Ribbon({
           </div>
         ) : tab === 'home' ? (
           <>
-            {/* ---- Genspark AI (first slot: entry + one-click AI actions) ---- */}
+            {/* ---- mAI Office (first slot: entry + one-click AI actions) ---- */}
             <div className="ribbon-group">
               <div className="ribbon-group-items">
                 <button
@@ -1650,7 +1650,7 @@ export function Ribbon({
                   <span className="rb-big-icon">
                     <GensparkMark size={26} />
                   </span>
-                  <span>Genspark AI</span>
+                  <span>mAI Office</span>
                 </button>
                 <button
                   className="rb-big ai-entry"
@@ -1707,7 +1707,7 @@ export function Ribbon({
                   <span>{t('aiPolishBtn')}</span>
                 </button>
               </div>
-              <div className="ribbon-group-label">Genspark AI</div>
+              <div className="ribbon-group-label">mAI Office</div>
             </div>
 
             <div className="ribbon-sep" />

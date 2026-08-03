@@ -1918,7 +1918,7 @@ export default function App() {
             </div>
           </div>
           <div className="ribbon-sep" />
-          {/* ---- AI assistant (same far-right Genspark entry as the docs ribbon) ---- */}
+          {/* ---- AI assistant (same far-right mAI Office entry as the docs ribbon) ---- */}
           <div className="ribbon-group">
             <div className="ribbon-group-items">
               <button

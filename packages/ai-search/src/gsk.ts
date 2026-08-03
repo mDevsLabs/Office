@@ -1,5 +1,5 @@
 /**
- * Wrapper around gsk (Genspark CLI, @genspark/cli) — search / image generation /
+ * Wrapper around gsk (mAI Office CLI, @genspark/cli) — search / image generation /
  * media analysis / upload / transcription.
  *
  * Execution: the main process spawns the CLI's JS entry with
@@ -78,7 +78,7 @@ function electronCompatArgs(): string[] {
   return compatPath ? ['--require', compatPath] : []
 }
 
-/** API key written by gsk login (or GSK_API_KEY env var); '' when not logged in. Also used for Genspark LLM proxy auth. */
+/** API key written by gsk login (or GSK_API_KEY env var); '' when not logged in. Also used for mAI Office LLM proxy auth. */
 export function gskApiKey(): string {
   if (process.env.GSK_API_KEY) return process.env.GSK_API_KEY
   try {
@@ -266,15 +266,15 @@ export async function gskGenerateImage(
   if (options.imageSize) args.push('--image_size', options.imageSize)
   const raw = await runGsk(args, GENERATE_TIMEOUT_MS, signal)
   const result = parseGskGeneratedImage(raw)
-  // Bare genspark file URLs (/api/files/) return 403; swap for a signed direct link with a token
+  // Bare mAI Office file URLs (/api/files/) return 403; swap for a signed direct link with a token
   // so later plain fetch downloads (e.g. insert_web_image) need no auth
   result.url = await gskResolveDownloadUrl(result.url)
   return result
 }
 
 /**
- * Swaps a genspark file wrapper URL for an anonymously downloadable signed direct link (`gsk download`).
- * Non-genspark file URLs are returned as-is; on swap failure the URL is also returned as-is
+ * Swaps a mAI Office file wrapper URL for an anonymously downloadable signed direct link (`gsk download`).
+ * Non-mAI Office file URLs are returned as-is; on swap failure the URL is also returned as-is
  * (callers handle download failures themselves).
  */
 export async function gskResolveDownloadUrl(url: string): Promise<string> {
@@ -288,7 +288,7 @@ export async function gskResolveDownloadUrl(url: string): Promise<string> {
   }
 }
 
-// ── Cloud single-slide generation (Genspark slide_generate) ─────────
+// ── Cloud single-slide generation (mAI Office slide_generate) ───────
 
 /**
  * Calls the tool_cli HTTP endpoint directly so structured params
@@ -338,7 +338,7 @@ async function toolCliPost(
   signal?: AbortSignal,
 ): Promise<unknown> {
   const key = gskApiKey()
-  if (!key) throw new Error('Not logged in to Genspark (gsk login)')
+  if (!key) throw new Error('Not logged in to mAI Office (gsk login)')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   const onAbort = () => controller.abort()

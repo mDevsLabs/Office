@@ -1,4 +1,4 @@
-# GenOffice
+# mAI Office
 
 An AI-native office suite for macOS and Windows: word processor, spreadsheet,
 presentations, and PDF — five Electron apps sharing one engine layer, built
@@ -8,27 +8,27 @@ around AI editing as a first-class workflow rather than a bolted-on chat box.
 
 Signed installers built from `main`:
 
-- **macOS** (Apple Silicon): [GenOffice-0.4.110-arm64.dmg](https://github.com/genspark-ai/genoffice/releases/download/v0.4.110/GenOffice-0.4.110-arm64.dmg)
-- **Windows** (x64): [GenOfficeSetup-v0.4.110.exe](https://github.com/genspark-ai/genoffice/releases/download/v0.4.110/GenOfficeSetup-v0.4.110.exe)
+- **macOS** (Apple Silicon): [mAI Office-0.4.110-arm64.dmg](https://github.com/mDevsLabs/mAI-Office)
+- **Windows** (x64): [mAI Office Setup-v0.4.110.exe](https://github.com/mDevsLabs/mAI-Office)
 
-Other versions are on the [Releases](https://github.com/genspark-ai/genoffice/releases) page.
+Other versions are on the [Releases](https://github.com/mDevsLabs/mAI-Office/releases) page.
 
 ## Apps
 
 | App           | Product              | What it is                                                                                                                                                                                                                                                                                                                                                 |
 | ------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/docs`   | **GenOffice Docs**   | `.docx` word processor. Byte-preserving round trip: only dirty paragraphs are regenerated (paragraph patch), everything else in the original file is kept byte-for-byte, so opening and saving never breaks layout in Word. Paginated view whose line metrics reproduce the original document's layout, tracked changes, comments, styles, equations, ink. |
-| `apps/sheets` | **GenOffice Sheets** | `.xlsx` spreadsheet. UI built on the open-source [Univer](https://github.com/dream-num/univer) core (Apache-2.0) with a large layer of in-house extensions; xlsx import/export runs through an in-house Rust sidecar (calamine + IronCalc), charts are rendered in-house (Konva), plus pivot tables, slicers, conditional formatting, and formula tracing. |
-| `apps/slides` | **GenOffice Slides** | `.pptx` presentations. In-house pptx parse/render/edit engine with masters, charts, cropping, ink, and text shaping (HarfBuzz metrics).                                                                                                                                                                                                                    |
-| `apps/pdf`    | **GenOffice PDF**    | PDF viewer/editor on pdf.js + pdf-lib: annotations, forms, outlines, stamps, signatures, page operations, print.                                                                                                                                                                                                                                           |
-| `apps/shell`  | **GenOffice**        | The suite shell: home screen, tabbed hosting of the four editors, auto-update.                                                                                                                                                                                                                                                                             |
+| `apps/docs`   | **mAI Office Docs**   | `.docx` word processor. Byte-preserving round trip: only dirty paragraphs are regenerated (paragraph patch), everything else in the original file is kept byte-for-byte, so opening and saving never breaks layout in Word. Paginated view whose line metrics reproduce the original document's layout, tracked changes, comments, styles, equations, ink. |
+| `apps/sheets` | **mAI Office Sheets** | `.xlsx` spreadsheet. UI built on the open-source [Univer](https://github.com/dream-num/univer) core (Apache-2.0) with a large layer of in-house extensions; xlsx import/export runs through an in-house Rust sidecar (calamine + IronCalc), charts are rendered in-house (Konva), plus pivot tables, slicers, conditional formatting, and formula tracing. |
+| `apps/slides` | **mAI Office Slides** | `.pptx` presentations. In-house pptx parse/render/edit engine with masters, charts, cropping, ink, and text shaping (HarfBuzz metrics).                                                                                                                                                                                                                    |
+| `apps/pdf`    | **mAI Office PDF**    | PDF viewer/editor on pdf.js + pdf-lib: annotations, forms, outlines, stamps, signatures, page operations, print.                                                                                                                                                                                                                                           |
+| `apps/shell`  | **mAI Office**        | The suite shell: home screen, tabbed hosting of the four editors, auto-update.                                                                                                                                                                                                                                                                             |
 
 Every app embeds the same AI panel: block-granular AI editing with version
 snapshots and diffs in docs, a tool-calling agent over workbook/slide/PDF
 state in the others.
 
-**AI providers.** The apps sign in to a Genspark account and route model
-calls through the Genspark service side; no model API key is stored locally.
+**AI providers.** The apps sign in to a mAI Office account and route model
+calls through the mAI Office service side; no model API key is stored locally.
 
 ## Engine packages
 
@@ -44,7 +44,7 @@ All pure TypeScript, no Electron dependency, unit-tested (except the UI kit):
   every app.
 - `packages/ai-provider` — provider abstraction and streaming for the model
   backends.
-- `packages/ai-search` — Genspark auth + web/image search tools.
+- `packages/ai-search` — mAI Office auth + web/image search tools.
 - `packages/i18n`, `packages/ui`, `packages/project-store`,
   `packages/electron-utils` — shared i18n core, React UI kit, recent-files
   store, and Electron main-process helpers.
@@ -100,10 +100,10 @@ CJK subsets) are OFL/Apache.
 
 ## License
 
-GenOffice is licensed under the [Apache License 2.0](LICENSE), with one
+mAI Office is licensed under the [Apache License 2.0](LICENSE), with one
 exception: the `ee/` directory is reserved for future enterprise modules and
-is covered by the [GenOffice Enterprise License](ee/LICENSE).
+is covered by the [mAI Office Enterprise License](ee/LICENSE).
 
-The GenOffice and Genspark names and logos are trademarks of Mainfunc, Inc.
+The mAI Office names and logos are trademarks of mProjects, Inc.
 The Apache-2.0 license does not grant permission to use them (see section 6);
 forks should use their own branding.

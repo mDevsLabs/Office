@@ -597,7 +597,7 @@ export function App() {
 
   // window title follows the document, so the OS window list and Switch Window show file names
   useEffect(() => {
-    document.title = doc ? doc.fileName : 'GenOffice Docs'
+    document.title = doc ? doc.fileName : 'mAI Office Docs'
   }, [doc])
 
   // Crash-recovery copy: while the document is dirty, push a serialized

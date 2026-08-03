@@ -2057,7 +2057,7 @@ function Ribbon({
             <GensparkMark size={26} />
           </span>
           <span>
-            <strong>Genspark AI</strong>
+            <strong>mAI Office</strong>
           </span>
         </button>
         <button
@@ -2522,7 +2522,7 @@ function Ribbon({
         onClick={() => onCommand('ai-toggle-panel')}
       >
         <GensparkMark size={28} />
-        <span>Genspark</span>
+        <span>mAI Office</span>
       </button>
     </div>
   )

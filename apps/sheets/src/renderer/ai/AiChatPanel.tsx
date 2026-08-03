@@ -51,7 +51,7 @@ export interface AiChatMessage {
   readonly isError?: boolean | undefined
   /** the run failed and this user message was rolled back out of the model context (#92) */
   readonly undelivered?: boolean | undefined
-  /** the run failed because Genspark is signed out — render an inline sign-in button (#87) */
+  /** the run failed because mAI Office is signed out — render an inline sign-in button (#87) */
   readonly loginRequired?: boolean | undefined
   /** Set when this message reflects an auto-applied plan; renders an inline [Undo] button. */
   readonly autoApplied?: { readonly opCount: number } | undefined
@@ -246,12 +246,12 @@ export function AiChatPanel({
         onPointerDown={startResize}
         role="separator"
         aria-orientation="vertical"
-        aria-label="Genspark"
+        aria-label="mAI Office"
       />
       <header className="ai-panel-header">
         <span className="ai-panel-title">
           <GensparkMark size={22} />
-          Genspark
+          mAI Office
         </span>
         <div className="ai-panel-header-actions">
           {(chat.length > 0 || historicChat.length > 0) && (

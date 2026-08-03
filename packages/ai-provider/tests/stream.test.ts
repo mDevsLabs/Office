@@ -111,7 +111,7 @@ describe('streamForProvider: anthropic', () => {
   })
 
   it('replaces an HTML error body (e.g. a gateway block page) with a readable note', async () => {
-    const html = '<!doctype html>\n<html>\n<head><title>Genspark</title></head><body>app shell</body></html>'
+    const html = '<!doctype html>\n<html>\n<head><title>mAI Office</title></head><body>app shell</body></html>'
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(html, { status: 403 })))
     const { cb } = collector()
     await expect(

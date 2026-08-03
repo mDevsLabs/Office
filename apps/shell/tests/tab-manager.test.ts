@@ -143,7 +143,7 @@ beforeEach(() => {
 describe('initial state', () => {
   it('starts with only the non-closable, active Home tab', () => {
     expect(manager.list()).toEqual([
-      { id: 'home', kind: 'home', title: 'GenOffice', closable: false, active: true },
+      { id: 'home', kind: 'home', title: 'mAI Office', closable: false, active: true },
     ])
   })
 })
@@ -156,7 +156,7 @@ describe('opening tabs', () => {
     expect(tabs[1]).toMatchObject({
       id,
       kind: 'docs',
-      title: 'GenOffice Docs',
+      title: 'mAI Office Docs',
       closable: true,
       active: true,
     })
@@ -172,7 +172,7 @@ describe('opening tabs', () => {
     manager.openSlidesTab('/tmp/deck.pptx')
     manager.openPdfTab('/tmp/scan.pdf')
     expect(manager.list().map((t) => t.title)).toEqual([
-      'GenOffice',
+      'mAI Office',
       'report.docx',
       'budget.xlsx',
       'deck.pptx',
@@ -184,9 +184,9 @@ describe('opening tabs', () => {
     manager.openSheetsTab()
     manager.openSlidesTab()
     expect(manager.list().map((t) => t.title)).toEqual([
-      'GenOffice',
-      'GenOffice Sheets',
-      'GenOffice Slides',
+      'mAI Office',
+      'mAI Office Sheets',
+      'mAI Office Slides',
     ])
   })
 

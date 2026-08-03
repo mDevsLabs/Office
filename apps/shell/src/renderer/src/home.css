@@ -121,7 +121,7 @@ body.vib .home {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- bottom-left account entry (today = Genspark login, later = signup/account system) ---- */
+/* ---- bottom-left account entry (today = mAI Office login, later = signup/account system) ---- */
 /* language switching lives in the account popup menu (.lang-row / .lang-flyout) */
 
 .lang-menu-item {
@@ -238,7 +238,7 @@ body.vib .home {
   color: #b3261e;
 }
 
-/* popup panel metrics match the Genspark account dropdown;
+/* popup panel metrics match the mAI Office account dropdown;
    stretched past the account entry (max width the sidebar can host un-clipped) */
 .account-menu {
   position: absolute;

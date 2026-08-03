@@ -2452,7 +2452,7 @@ export function App() {
                       onClick={toggleAi}
                     >
                       <GensparkMark size={14} />
-                      <span>Genspark AI</span>
+                      <span>mAI Office</span>
                     </button>
                     {/* Same one-click presets as the Home tab; hidden instead of
                         disabled while the deck has no real content */}

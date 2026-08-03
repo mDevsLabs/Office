@@ -54,7 +54,7 @@ afterEach(() => {
 /** 0 h1 | 1 p | 2 h2 | 3 p */
 const fixture = () => [
   heading('Chapter 1 Overview', 1),
-  para('GenSpark is an AI office suite.'),
+  para('mAI Office is an AI office suite.'),
   heading('Risk Notes', 2),
   para('This document is for reference only.'),
 ]
@@ -224,7 +224,7 @@ describe('content read/write tools', () => {
       NUM_IDS,
     )
     expect(exec.output).toContain('<h1>Chapter 1 Overview</h1>')
-    expect(exec.output).toContain('<p>GenSpark is an AI office suite.</p>')
+    expect(exec.output).toContain('<p>mAI Office is an AI office suite.</p>')
   })
 
   it('replace_blocks rewrites the specified blocks', async () => {

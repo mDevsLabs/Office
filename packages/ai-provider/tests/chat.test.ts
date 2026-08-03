@@ -24,7 +24,7 @@ describe('chatForProvider', () => {
   })
 
   it('anthropic: replaces an HTML error body with a readable note', async () => {
-    const html = '<!doctype html>\n<html>\n<head><title>Genspark</title></head><body>app shell</body></html>'
+    const html = '<!doctype html>\n<html>\n<head><title>mAI Office</title></head><body>app shell</body></html>'
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(errorResponse(403, html)))
     const result = await chatForProvider('anthropic', { apiKey: 'k', model: 'm' }, 'sys', 'hi')
     expect(result.ok).toBe(false)
