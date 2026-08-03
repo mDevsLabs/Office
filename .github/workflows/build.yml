@@ -47,9 +47,11 @@ jobs:
       - name: Build macOS installer
         env:
           GENOFFICE_UPDATE_URL: ${{ vars.GENOFFICE_UPDATE_URL }}
+          ELECTRON_BUILDER_SKIP_NOTARIZE: true
         run: |
           cd apps/shell
-          npm run dist:mac -- --config "{\"mac\":{\"notarize\":false,\"hardenedRuntime\":false},\"dmg\":{\"sign\":false}}"
+          echo '{"mac":{"hardenedRuntime":false},"dmg":{"sign":false}}' > electron-builder-unsigned.json
+          npm run dist:mac -- --config electron-builder-unsigned.json
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
