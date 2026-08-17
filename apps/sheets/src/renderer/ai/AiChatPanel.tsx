@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { AiComposer, AiTypingIndicator } from '@genoffice/ui'
+import { AiComposer, AiTypingIndicator, AuthModal } from '@genoffice/ui'
 import { GensparkMark } from '../ribbon-icons'
 import type { ChangePlan } from '../../domain/workbook.types'
 import type { AttachmentMeta } from '../../shared/desktop-api'
@@ -112,6 +112,7 @@ export function AiChatPanel({
   const stickToBottomRef = useRef(true)
   const [dragOver, setDragOver] = useState(false)
   const asideRef = useRef<HTMLElement | null>(null)
+  const [showAuth, setShowAuth] = useState(false)
   const [resizing, setResizing] = useState(false)
   /** Wall-clock start of the current run (aiBusy false→true), drives the elapsed badge */
   const busyStartRef = useRef(0)
@@ -334,7 +335,7 @@ export function AiChatPanel({
                 {entry.loginRequired && (
                   <button
                     className="ai-login-btn"
-                    onClick={() => void window.desktopApi.aiGskLogin()}
+                    onClick={() => setShowAuth(true)}
                   >
                     {t('aiGskLoginBtn')}
                   </button>
@@ -442,6 +443,16 @@ export function AiChatPanel({
           onPasteFiles={onPasteFiles}
         />
       </div>
+      {showAuth && (
+        <AuthModal 
+          onSuccess={(token, tier, email) => {
+            setShowAuth(false)
+            // Save to localStorage for AiComposer
+            localStorage.setItem('mai_token', token)
+          }}
+          onCancel={() => setShowAuth(false)}
+        />
+      )}
     </aside>
   )
 }

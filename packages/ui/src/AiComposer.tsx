@@ -30,6 +30,9 @@ export function AiComposer({
   onSend,
   onStop,
   onPasteFiles,
+  models,
+  selectedModel,
+  onModelChange,
 }: {
   readonly value: string
   readonly busy: boolean

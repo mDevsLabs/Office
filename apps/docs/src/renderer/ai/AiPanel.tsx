@@ -6,6 +6,8 @@ import type { AiSettings, AttachmentAddResult, AttachmentMeta } from '../../shar
 import { ATTACHMENT_IMAGE_EXTS } from '../../shared/ipc'
 import type { PmNode } from '../editor/convert'
 import { findNumId, type NumIds } from './protocol'
+import { ToolChipList } from './ToolChipList'
+import { AuthModal } from '@genoffice/ui'
 import { createDocsSkill } from './docs-skill'
 import { applyRevisionsBy } from '../editor/revisions'
 import { DOCS_AGENT_MAX_TURNS, DOCS_CONTINUE_INSTRUCTION } from './continuation'
@@ -158,6 +160,7 @@ export function AiPanel({
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [attachNotice, setAttachNotice] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
   const [panelWidth, setPanelWidth] = useState(loadPanelWidth)
   const [resizing, setResizing] = useState(false)
   const asideRef = useRef<HTMLElement>(null)
@@ -778,7 +781,7 @@ export function AiPanel({
                 <div className="ai-msg-error">{t('aiErrorPrefix', { error: entry.error })}</div>
               )}
               {entry.loginRequired && (
-                <button className="ai-login-btn" onClick={() => void window.desktop.aiGskLogin()}>
+                <button className="ai-login-btn" onClick={() => setShowAuth(true)}>
                   {t('aiGskLoginBtn')}
                 </button>
               )}
@@ -914,6 +917,15 @@ export function AiPanel({
           }
         />
       </div>
+      {showAuth && (
+        <AuthModal 
+          onSuccess={(token, tier, email) => {
+            setShowAuth(false)
+            localStorage.setItem('mai_token', token)
+          }}
+          onCancel={() => setShowAuth(false)}
+        />
+      )}
     </aside>
   )
 }
