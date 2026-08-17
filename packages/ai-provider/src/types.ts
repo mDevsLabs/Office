@@ -1,6 +1,6 @@
 import type { AgentMessage, AgentToolCall, AgentToolDef } from '@genoffice/agent-core'
 
-export type AiProviderId = 'genspark' | 'anthropic' | 'gemini' | 'deepseek' | 'openai' | 'custom'
+export type AiProviderId = 'mai'
 
 /** mAI Office account status (gsk login state; the sole auth source for AI features) */
 export interface GenSparkAccountStatus {
@@ -8,20 +8,19 @@ export interface GenSparkAccountStatus {
   email?: string
 }
 
+export interface AiProviderMeta {
+  readonly id: AiProviderId
+  readonly label: string
+  readonly models: readonly string[]
+  readonly defaultModel: string
+  readonly keyPlaceholder: string
+  readonly needsBaseUrl?: boolean
+}
+
 export interface AiProviderConfig {
   apiKey: string
   model: string
-  /** only used by the custom (OpenAI-compatible) provider */
-  baseUrl?: string | undefined
-}
-
-export interface AiProviderMeta {
-  id: AiProviderId
-  label: string
-  models: string[]
-  defaultModel: string
-  keyPlaceholder: string
-  needsBaseUrl?: boolean
+  baseUrl?: string
 }
 
 export interface AiSettings {
@@ -31,9 +30,9 @@ export interface AiSettings {
 
 /** pre-provider settings shape (single OpenAI-compatible endpoint); migrated into "custom" */
 export interface LegacyAiSettings {
-  baseUrl?: string
   apiKey?: string
   model?: string
+  baseUrl?: string
 }
 
 export interface AiChatRequest {

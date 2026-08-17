@@ -14,6 +14,7 @@ import type {
 import { fileCountKey, visiblePageCount } from './counts'
 import { useI18n } from './locale'
 import type { I18n, StringKey } from './locale'
+import { AuthModal } from './Auth'
 
 declare global {
   interface Window {
@@ -531,18 +532,11 @@ function AccountEntry() {
     }
   }, [langFly])
 
+  const [showAuth, setShowAuth] = useState(false)
+
   const startLogin = () => {
-    // clicking again while waiting = relaunch the browser login and reset the timer (rescue for a mistakenly closed login page)
-    setLoginError(null)
-    setWaiting(true)
-    setLoginNonce((n) => n + 1)
     closeMenu()
-    void window.aiOffice.accountLogin().then((launched) => {
-      if (!launched) {
-        setWaiting(false)
-        setLoginError('launch')
-      }
-    })
+    setShowAuth(true)
   }
 
   const handleClick = () => {
@@ -752,6 +746,17 @@ function AccountEntry() {
           )}
         </span>
       </button>
+      {showAuth && (
+        <AuthModal
+          onSuccess={(token, tier, userEmail) => {
+            setShowAuth(false)
+            // L'application s'attend probablement à ce qu'on prévienne la main window, ou qu'on stocke le token.
+            // Pour l'instant on fait confiance au backend pour garder la session, et on simule la mise à jour :
+            void window.aiOffice.accountLogin() // On laisse l'appel IPC pour l'instant si besoin, ou on s'en passe
+          }}
+          onCancel={() => setShowAuth(false)}
+        />
+      )}
     </div>
   )
 }

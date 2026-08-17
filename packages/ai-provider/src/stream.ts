@@ -1,6 +1,5 @@
 import type { AgentMessage, AgentToolCall, AgentToolDef } from '@genoffice/agent-core'
 import { httpBodyDetail } from './http-error'
-import { GENSPARK_LLM_BASE_URLS } from './providers'
 import type { AiProviderConfig, AiProviderId } from './types'
 
 // ---- streaming (SSE line splitting shared by all providers) ----
@@ -431,10 +430,27 @@ export async function streamOpenAiCompatible(
   flushTools()
 }
 
-const OPENAI_COMPATIBLE_BASE_URLS: Partial<Record<AiProviderId, string>> = {
-  deepseek: 'https://api.deepseek.com/v1',
-  openai: 'https://api.openai.com/v1',
+import { MAI_API_BASE } from './providers'
+
+async function logUsage(config: AiProviderConfig): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${MAI_API_BASE}/log-usage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${config.apiKey}`,
+      }
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      return { ok: false, error: data.error || 'Quota dépassé ou erreur de vérification' }
+    }
+    return { ok: true }
+  } catch (e: any) {
+    return { ok: false, error: e.message }
+  }
 }
+
 
 /** route a streaming, tool-calling-capable turn by provider id */
 export async function streamForProvider(
@@ -446,60 +462,25 @@ export async function streamForProvider(
   maxTokens: number,
   cb: StreamCallbacks,
 ): Promise<void> {
-  switch (provider) {
-    case 'genspark':
-      // The proxy exposes three protocol-specific endpoints; route by model id prefix: claude uses
-      // the Anthropic protocol (preserves image input fidelity), gemini uses Gemini, rest OpenAI-compatible
-      if (config.model.startsWith('claude')) {
-        return streamAnthropic(
-          config,
-          system,
-          messages,
-          tools,
-          maxTokens,
-          cb,
-          GENSPARK_LLM_BASE_URLS.anthropic,
-        )
-      }
-      if (config.model.startsWith('gemini')) {
-        return streamGemini(
-          config,
-          system,
-          messages,
-          tools,
-          maxTokens,
-          cb,
-          GENSPARK_LLM_BASE_URLS.gemini,
-        )
-      }
-      return streamOpenAiCompatible(
-        GENSPARK_LLM_BASE_URLS.openai,
-        config,
-        system,
-        messages,
-        tools,
-        maxTokens,
-        cb,
-      )
-    case 'anthropic':
-      return streamAnthropic(config, system, messages, tools, maxTokens, cb)
-    case 'gemini':
-      return streamGemini(config, system, messages, tools, maxTokens, cb)
-    case 'deepseek':
-    case 'openai':
-      return streamOpenAiCompatible(
-        OPENAI_COMPATIBLE_BASE_URLS[provider]!,
-        config,
-        system,
-        messages,
-        tools,
-        maxTokens,
-        cb,
-      )
-    case 'custom':
-      if (!config.baseUrl) throw new Error('A custom provider requires a Base URL')
-      return streamOpenAiCompatible(config.baseUrl, config, system, messages, tools, maxTokens, cb)
-    default:
-      throw new Error(`Unknown provider: ${provider}`)
+  if (provider === 'mai') {
+    // Dans le vrai fichier, nous utiliserons MAI_API_BASE au lieu de GENSPARK_LLM_BASE_URLS
+    // mais on injecte une promesse qui vérifie l'usage.
+    const usageCheck = await logUsage(config)
+    if (!usageCheck.ok) {
+      throw new Error(`Quota check failed: ${usageCheck.error}`)
+    }
+    
+    // MAI_API_BASE est importé au niveau supérieur
+
+    return streamOpenAiCompatible(
+      MAI_API_BASE,
+      config,
+      system,
+      messages,
+      tools,
+      maxTokens,
+      cb,
+    )
   }
+  throw new Error(`Unknown provider: ${provider}`)
 }
