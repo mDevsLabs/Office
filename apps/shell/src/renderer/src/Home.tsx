@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import logoLockup from '../../../../build/icon.png'
+import logoLockup from '../../../build/icon.png'
 import iconDocx from './assets/file-docx.svg'
 import iconXlsx from './assets/file-xlsx.svg'
 import iconPptx from './assets/file-pptx.svg'
