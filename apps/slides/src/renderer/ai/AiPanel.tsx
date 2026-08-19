@@ -241,6 +241,7 @@ export function AiPanel({
   const [attachments, setAttachments] = useState<AttachmentMeta[]>([])
   const [attachNotice, setAttachNotice] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
   const [panelWidth, setPanelWidth] = useState(loadPanelWidth)
   const asideRef = useRef<HTMLElement>(null)
 
@@ -1380,12 +1381,34 @@ export function AiPanel({
         aria-orientation="vertical"
         aria-label="mAI Office"
       />
-      <div className="ai-panel-header">
-        <span className="ai-panel-title">
+      <header className="ai-panel-header">
+        <span className="ai-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <GensparkMark size={22} />
-          {t('aiPanelTitle')}
+          mAI Office
         </span>
-        <div className="ai-panel-header-actions">
+        <div className="ai-panel-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {localStorage.getItem('mai_token') && (
+            <div className="ai-user-profile" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#666' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#0066ff', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                {localStorage.getItem('mai_email')?.[0]?.toUpperCase() || 'U'}
+              </div>
+              <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {localStorage.getItem('mai_email') || 'Connecté'}
+              </span>
+              <button 
+                className="ai-header-btn" 
+                onClick={() => {
+                  localStorage.removeItem('mai_token');
+                  localStorage.removeItem('mai_email');
+                  window.location.reload();
+                }} 
+                title="Déconnexion"
+                style={{ marginLeft: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#888' }}
+              >
+                ⚙️
+              </button>
+            </div>
+          )}
           {chat.length > 0 && (
             <button className="ai-header-btn" onClick={newChat} title={t('aiNewChat')}>
               <IconNewChat size={15} />
@@ -1397,7 +1420,7 @@ export function AiPanel({
             </button>
           )}
         </div>
-      </div>
+      </header>
 
       <div ref={logRef} className="ai-chat" onScroll={onLogScroll}>
         {/* Past conversation (read-only transcript, not fed to the model), displayed continuously with the current turn */}
@@ -1482,7 +1505,7 @@ export function AiPanel({
                 <div className="ai-msg-error">{t('aiMsgError', { error: entry.error })}</div>
               )}
               {entry.loginRequired && (
-                <button className="ai-login-btn" onClick={() => void window.slidesApi.aiGskLogin()}>
+                <button className="ai-login-btn" onClick={() => setShowAuth(true)}>
                   {t('aiGskLoginBtn')}
                 </button>
               )}

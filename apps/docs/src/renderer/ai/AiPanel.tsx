@@ -679,12 +679,34 @@ export function AiPanel({
         aria-orientation="vertical"
         aria-label={t('aiPanelTitle')}
       />
-      <div className="ai-panel-header">
-        <span className="ai-panel-title">
+      <header className="ai-panel-header">
+        <span className="ai-panel-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <GensparkMark size={22} />
-          {t('aiPanelTitle')}
+          mAI Office
         </span>
-        <div className="ai-panel-header-actions">
+        <div className="ai-panel-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {localStorage.getItem('mai_token') && (
+            <div className="ai-user-profile" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#666' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#0066ff', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+                {localStorage.getItem('mai_email')?.[0]?.toUpperCase() || 'U'}
+              </div>
+              <span style={{ maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {localStorage.getItem('mai_email') || 'Connecté'}
+              </span>
+              <button 
+                className="ai-header-btn" 
+                onClick={() => {
+                  localStorage.removeItem('mai_token');
+                  localStorage.removeItem('mai_email');
+                  window.location.reload();
+                }} 
+                title="Déconnexion"
+                style={{ marginLeft: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#888' }}
+              >
+                ⚙️
+              </button>
+            </div>
+          )}
           {chat.length > 0 && (
             <button className="ai-header-btn" onClick={newChat} title={t('aiNewChatTitle')}>
               <IconNewChat size={16} />
@@ -922,6 +944,7 @@ export function AiPanel({
           onSuccess={(token, tier, email) => {
             setShowAuth(false)
             localStorage.setItem('mai_token', token)
+            localStorage.setItem('mai_email', email)
           }}
           onCancel={() => setShowAuth(false)}
         />

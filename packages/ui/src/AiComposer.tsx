@@ -83,19 +83,8 @@ export function AiComposer({
         const token = localStorage.getItem('mai_token');
         if (!token) return;
 
-        // Fetch api keys
-        const keyRes = await fetch('https://mai.val.run/api-keys', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        const keys = await keyRes.json()
-        if (!keys || keys.length === 0) return;
-        
-        // Pick random key
-        const randomKey = keys[Math.floor(Math.random() * keys.length)].key_value;
-
-        // Fetch models
         const modelsRes = await fetch('https://mai.val.run/v1/models', {
-          headers: { Authorization: `Bearer ${randomKey}` }
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         })
         const modelsData = await modelsRes.json()
         if (modelsData && modelsData.data) {

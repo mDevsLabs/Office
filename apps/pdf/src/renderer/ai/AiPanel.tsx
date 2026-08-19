@@ -346,6 +346,16 @@ export function AiPanel({
           onStop={stop}
         />
       </div>
+      {showAuth && (
+        <AuthModal 
+          onSuccess={(token, tier, email) => {
+            setShowAuth(false);
+            localStorage.setItem('mai_token', token);
+            localStorage.setItem('mai_email', email);
+          }}
+          onCancel={() => setShowAuth(false)}
+        />
+      )}
     </aside>
   )
 }
