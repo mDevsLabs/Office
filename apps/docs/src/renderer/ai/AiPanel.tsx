@@ -718,7 +718,7 @@ export function AiPanel({
             </button>
           )}
         </div>
-      </div>
+      </header>
 
       <div ref={logRef} className="ai-chat" onScroll={onLogScroll}>
         {/* past conversation (read-only transcript, not fed to the model), shown continuously with the current turn */}
