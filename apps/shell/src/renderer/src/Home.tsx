@@ -438,9 +438,17 @@ function AccountEntry() {
   // query login state + app version once on mount
   useEffect(() => {
     let alive = true
-    void window.aiOffice.accountStatus?.().then((s) => {
-      if (alive) setStatus(s)
-    })
+    const maiToken = localStorage.getItem('mai_token')
+    const maiEmail = localStorage.getItem('mai_email')
+    
+    if (maiToken) {
+      setStatus({ loggedIn: true, email: maiEmail || '' })
+    } else {
+      void window.aiOffice.accountStatus?.().then((s) => {
+        if (alive) setStatus(s)
+      })
+    }
+    
     void window.aiOffice.getAppVersion?.().then((v) => {
       if (alive && v) setAppVersion(v)
     })
@@ -454,6 +462,15 @@ function AccountEntry() {
     if (!waiting) return
     const startedAt = Date.now()
     const timer = setInterval(() => {
+      const maiToken = localStorage.getItem('mai_token')
+      const maiEmail = localStorage.getItem('mai_email')
+      
+      if (maiToken) {
+        setStatus({ loggedIn: true, email: maiEmail || '' })
+        setWaiting(false)
+        return
+      }
+
       void window.aiOffice.accountStatus().then((s) => {
         if (s.loggedIn) {
           setStatus(s)
@@ -661,6 +678,8 @@ function AccountEntry() {
               disabled={loggingOut}
               onClick={() => {
                 setLoggingOut(true)
+                localStorage.removeItem('mai_token')
+                localStorage.removeItem('mai_email')
                 void window.aiOffice.accountLogout().then(() => {
                   setLoggingOut(false)
                   closeMenu()
@@ -750,9 +769,9 @@ function AccountEntry() {
         <AuthModal
           onSuccess={(token, tier, userEmail) => {
             setShowAuth(false)
-            // L'application s'attend probablement à ce qu'on prévienne la main window, ou qu'on stocke le token.
-            // Pour l'instant on fait confiance au backend pour garder la session, et on simule la mise à jour :
-            void window.aiOffice.accountLogin() // On laisse l'appel IPC pour l'instant si besoin, ou on s'en passe
+            localStorage.setItem('mai_token', token)
+            localStorage.setItem('mai_email', userEmail)
+            setStatus({ loggedIn: true, email: userEmail })
           }}
           onCancel={() => setShowAuth(false)}
         />

@@ -2271,7 +2271,7 @@ export function registerAiIpc(): void {
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(SETTINGS_PATH(), {})
     const settings = resolveAiSettings(stored, defaultAiSettings())
     // AI features all go through mAI Office (gsk login); legacy settings with another provider are reset
-    settings.provider = 'genspark'
+    settings.provider = 'mai'
     return settings
   })
 
@@ -2301,7 +2301,7 @@ export function registerAiIpc(): void {
     const provider = settings.provider
     let config = settings.providers?.[provider]
     // the mAI Office key never enters the settings file; requests take it from the gsk login state
-    if (provider === 'genspark' && config && !config.apiKey) {
+    if (provider === 'mai' && config && !config.apiKey) {
       config = { ...config, apiKey: gskApiKey() }
     }
     const send = (chunk: AiStreamChunk) => {
@@ -2311,7 +2311,7 @@ export function registerAiIpc(): void {
       send({
         requestId,
         type: 'error',
-        error: provider === 'genspark' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
+        error: provider === 'mai' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
       })
       return
     }
@@ -2389,13 +2389,13 @@ export function registerAiIpc(): void {
     const { settings, system, user } = request
     const provider = settings.provider
     let config = settings.providers?.[provider]
-    if (provider === 'genspark' && config && !config.apiKey) {
+    if (provider === 'mai' && config && !config.apiKey) {
       config = { ...config, apiKey: gskApiKey() }
     }
     if (!config?.apiKey) {
       return {
         ok: false,
-        error: provider === 'genspark' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
+        error: provider === 'mai' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
       }
     }
     if (!config.model) return { ok: false, error: tm('errNoModel') }

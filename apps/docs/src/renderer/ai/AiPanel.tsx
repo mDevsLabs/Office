@@ -189,11 +189,17 @@ export function AiPanel({
   /** projectId/chatId of the current chat */
   const chatRefIds = useRef<{ projectId: string; chatId: string } | null>(null)
 
+  // Inject the mai_token into the settings so the backend can use it
+  const currentSettings = { ...settings }
+  if (!currentSettings.providers) currentSettings.providers = {}
+  if (!currentSettings.providers.mai) currentSettings.providers.mai = { apiKey: '', model: '' }
+  currentSettings.providers.mai.apiKey = localStorage.getItem('mai_token') || ''
+  
   // latest props for the loop's closures (the loop instance outlives renders)
   const editorRef = useRef(editor)
   editorRef.current = editor
-  const settingsRef = useRef(settings)
-  settingsRef.current = settings
+  const settingsRef = useRef(currentSettings)
+  settingsRef.current = currentSettings
   const blocksRef = useRef(blocks)
   blocksRef.current = blocks
   const numIdFallbackRef = useRef(numIdFallback)
@@ -449,22 +455,17 @@ export function AiPanel({
             }
             return next
           })
-          // Signed-out failures get an inline sign-in button (#87); detected via
-          // gsk status rather than matching the localized error text
-          void window.desktop
-            .aiGskStatus()
-            .then((status) => {
-              if (status.loggedIn) return
-              setChat((prev) => {
-                const next = [...prev]
-                const last = next.at(-1)
-                if (last?.role === 'assistant' && last.error) {
-                  next[next.length - 1] = { ...last, loginRequired: true }
-                }
-                return next
-              })
+          // Instead of checking aiGskStatus, we check mai_token
+          if (!localStorage.getItem('mai_token')) {
+            setChat((prev) => {
+              const next = [...prev]
+              const last = next.at(-1)
+              if (last?.role === 'assistant' && last.error) {
+                next[next.length - 1] = { ...last, loginRequired: true }
+              }
+              return next
             })
-            .catch(() => {})
+          }
           setBusy(false)
         },
       },
@@ -696,6 +697,16 @@ export function AiPanel({
               <button 
                 className="ai-header-btn" 
                 onClick={() => {
+                  window.open('https://mai.val.run/usages', '_blank');
+                }} 
+                title="Paramètres"
+                style={{ marginLeft: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#888' }}
+              >
+                ⚙️
+              </button>
+              <button 
+                className="ai-header-btn" 
+                onClick={() => {
                   localStorage.removeItem('mai_token');
                   localStorage.removeItem('mai_email');
                   window.location.reload();
@@ -703,7 +714,7 @@ export function AiPanel({
                 title="Déconnexion"
                 style={{ marginLeft: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#888' }}
               >
-                ⚙️
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.2 2H3.7A1.7 1.7 0 0 0 2 3.7v8.6A1.7 1.7 0 0 0 3.7 14h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M10.7 4.9 13.8 8l-3.1 3.1M13.4 8H6.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </button>
             </div>
           )}

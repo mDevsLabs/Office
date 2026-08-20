@@ -537,7 +537,16 @@ export function App(): React.JSX.Element {
   // when no provider is configured — see isAgentConfigured/handleSend) ----
   const [aiSettings, setAiSettingsState] = useState<AiSettings | null>(null)
   const aiSettingsRef = useRef<AiSettings | null>(null)
-  aiSettingsRef.current = aiSettings
+  aiSettingsRef.current = aiSettings ? {
+    ...aiSettings,
+    providers: {
+      ...aiSettings.providers,
+      mai: {
+        ...(aiSettings.providers?.mai || { model: '' }),
+        apiKey: localStorage.getItem('mai_token') || ''
+      }
+    }
+  } : null
   const [aiBusy, setAiBusy] = useState(false)
   // Display history survives restarts via localStorage; the AgentLoop's model
   // context does not, so restored turns are read-only transcript.
@@ -853,22 +862,17 @@ export function App(): React.JSX.Element {
             }
             return next
           })
-          // Signed-out failures get an inline sign-in button (#87); detected via
-          // gsk status rather than matching the localized error text
-          void window.desktopApi
-            .aiGskStatus()
-            .then((status) => {
-              if (status.loggedIn) return
-              setChat((previous) => {
-                const next = [...previous]
-                const last = next.at(-1)
-                if (last?.role === 'assistant' && last.isError) {
-                  next[next.length - 1] = { ...last, loginRequired: true }
-                }
-                return next
-              })
+          // Instead of checking aiGskStatus, we check mai_token
+          if (!localStorage.getItem('mai_token')) {
+            setChat((previous) => {
+              const next = [...previous]
+              const last = next.at(-1)
+              if (last?.role === 'assistant' && last.isError) {
+                next[next.length - 1] = { ...last, loginRequired: true }
+              }
+              return next
             })
-            .catch(() => {})
+          }
           void autoSaveCompletedAiRun().finally(() => setAiBusy(false))
         },
       },

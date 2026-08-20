@@ -58,7 +58,7 @@ export function registerAiIpc(): void {
     const stored = readJson<Partial<AiSettings> & LegacyAiSettings>(AI_SETTINGS_PATH(), {})
     const settings = resolveAiSettings(stored, defaultAiSettings())
     // AI features all go through mAI Office (gsk login); stored settings that chose another provider are normalized back
-    settings.provider = 'genspark'
+    settings.provider = 'mai'
     return settings
   })
 
@@ -88,7 +88,7 @@ export function registerAiIpc(): void {
     const provider = settings.provider
     let config = settings.providers?.[provider]
     // The mAI Office key never enters the settings file; it is fetched from the gsk login state per request
-    if (provider === 'genspark' && config && !config.apiKey) {
+    if (provider === 'mai' && config && !config.apiKey) {
       config = { ...config, apiKey: gskApiKey() }
     }
     const send = (chunk: AiStreamChunk) => {
@@ -98,7 +98,7 @@ export function registerAiIpc(): void {
       send({
         requestId,
         type: 'error',
-        error: provider === 'genspark' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
+        error: provider === 'mai' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
       })
       return
     }
