@@ -80,24 +80,28 @@ export function AiComposer({
     
     async function fetchModels() {
       try {
-        const token = localStorage.getItem('mai_token');
-        if (!token) return;
+        const apiKey = localStorage.getItem('mai_api_key') || localStorage.getItem('mai_token') || ''
+        const headers: Record<string, string> = {}
+        if (apiKey) {
+          headers['Authorization'] = `Bearer ${apiKey}`
+        }
 
-        const modelsRes = await fetch('https://mai.val.run/v1/models', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
+        const modelsRes = await fetch('https://mai.val.run/v1/models', { headers })
         const modelsData = await modelsRes.json()
         if (modelsData && modelsData.data) {
-          const list = modelsData.data.map((m: any) => ({ id: m.id, name: m.name || m.id }));
+          const list = modelsData.data.map((m: any) => ({ id: m.id, name: m.name || m.id }))
           setInternalModels(list)
-          if (list.length > 0) setInternalSelectedModel(list[0].id)
+          if (list.length > 0 && !selectedModel) {
+            setInternalSelectedModel(list[0].id)
+            if (onModelChange) onModelChange(list[0].id)
+          }
         }
       } catch (err) {
         console.error('Failed to fetch mAI models', err)
       }
     }
     fetchModels()
-  }, [models])
+  }, [models, selectedModel, onModelChange])
 
   // auto-grow up to ~6 lines; empty clears the inline height outright so the
   // CSS min-height governs (a hidden-at-measure pass can leave a stale value).

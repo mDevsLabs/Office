@@ -432,25 +432,25 @@ export async function streamOpenAiCompatible(
 
 import { MAI_API_BASE } from './providers'
 
-async function logUsage(config: AiProviderConfig): Promise<{ ok: boolean; error?: string }> {
+async function logUsage(config: AiProviderConfig, tokensUsed = 0): Promise<{ ok: boolean; error?: string }> {
   try {
-    const res = await fetch(`${MAI_API_BASE}/log-usage`, {
+    const res = await fetch(`${MAI_API_BASE}/usage-log`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${config.apiKey}`,
-      }
+      },
+      body: JSON.stringify({ tokensUsed }),
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      return { ok: false, error: data.error || 'Quota dépassé ou erreur de vérification' }
+      return { ok: false, error: data.error || 'Quota dépassé ou non autorisé' }
     }
     return { ok: true }
   } catch (e: any) {
     return { ok: false, error: e.message }
   }
 }
-
 
 /** route a streaming, tool-calling-capable turn by provider id */
 export async function streamForProvider(
@@ -463,24 +463,47 @@ export async function streamForProvider(
   cb: StreamCallbacks,
 ): Promise<void> {
   if (provider === 'mai') {
-    // Dans le vrai fichier, nous utiliserons MAI_API_BASE au lieu de GENSPARK_LLM_BASE_URLS
-    // mais on injecte une promesse qui vérifie l'usage.
-    const usageCheck = await logUsage(config)
-    if (!usageCheck.ok) {
-      throw new Error(`Quota check failed: ${usageCheck.error}`)
+    // 1. Calcul estimé des tokens d'entrée (prompt)
+    let promptChars = system.length
+    for (const m of messages) {
+      if (m.role === 'user' && m.text) promptChars += m.text.length
+      else if (m.role === 'assistant' && m.text) promptChars += m.text.length
     }
-    
-    // MAI_API_BASE est importé au niveau supérieur
+    const promptTokens = Math.max(1, Math.round(promptChars / 4))
 
-    return streamOpenAiCompatible(
-      MAI_API_BASE,
-      config,
-      system,
-      messages,
-      tools,
-      maxTokens,
-      cb,
-    )
+    // 2. Vérification préliminaire du quota
+    const usageCheck = await logUsage(config, 0)
+    if (!usageCheck.ok) {
+      throw new Error(`Quota dépassé : ${usageCheck.error}`)
+    }
+
+    // 3. Suivi des caractères de sortie durant le streaming
+    let responseChars = 0
+    const wrappedCb: StreamCallbacks = {
+      ...cb,
+      onDelta: (text) => {
+        responseChars += text.length
+        cb.onDelta(text)
+      },
+    }
+
+    try {
+      await streamOpenAiCompatible(
+        MAI_API_BASE,
+        config,
+        system,
+        messages,
+        tools,
+        maxTokens,
+        wrappedCb,
+      )
+    } finally {
+      // 4. Calcul et déduction de la somme des tokens (Prompt + Completion)
+      const completionTokens = Math.max(1, Math.round(responseChars / 4))
+      const totalTokens = promptTokens + completionTokens
+      void logUsage(config, totalTokens)
+    }
+    return
   }
   throw new Error(`Unknown provider: ${provider}`)
 }

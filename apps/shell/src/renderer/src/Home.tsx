@@ -15,6 +15,7 @@ import { fileCountKey, visiblePageCount } from './counts'
 import { useI18n } from './locale'
 import type { I18n, StringKey } from './locale'
 import { AuthModal } from '@genoffice/ui'
+import { SettingsView } from './SettingsView'
 
 declare global {
   interface Window {
@@ -417,7 +418,7 @@ const LANG_OPTIONS = [
   { value: 'zh-TW', label: '繁體中文' },
 ] as const
 
-function AccountEntry() {
+function AccountEntry({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { lang, setLang, t } = useI18n()
   const [status, setStatus] = useState<AccountStatus | null>(null)
   const [waiting, setWaiting] = useState(false)
@@ -425,6 +426,9 @@ function AccountEntry() {
   const [loginNonce, setLoginNonce] = useState(0)
   const [loginError, setLoginError] = useState<'timeout' | 'launch' | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState(() => localStorage.getItem('mai_avatar') || '')
+  const [username, setUsername] = useState(() => localStorage.getItem('mai_username') || '')
+
   // language flyout: opens on hover, fixed-position so it can escape the
   // sidebar's scroll container (same trick as the project row menu)
   const [langFly, setLangFly] = useState<{ left: number; bottom: number } | null>(null)
@@ -440,6 +444,11 @@ function AccountEntry() {
     let alive = true
     const maiToken = localStorage.getItem('mai_token')
     const maiEmail = localStorage.getItem('mai_email')
+    const maiAvatar = localStorage.getItem('mai_avatar')
+    const maiUsername = localStorage.getItem('mai_username')
+
+    if (maiAvatar) setAvatarUrl(maiAvatar)
+    if (maiUsername) setUsername(maiUsername)
     
     if (maiToken) {
       setStatus({ loggedIn: true, email: maiEmail || '' })
@@ -464,6 +473,10 @@ function AccountEntry() {
     const timer = setInterval(() => {
       const maiToken = localStorage.getItem('mai_token')
       const maiEmail = localStorage.getItem('mai_email')
+      const maiAvatar = localStorage.getItem('mai_avatar')
+      const maiUsername = localStorage.getItem('mai_username')
+      if (maiAvatar) setAvatarUrl(maiAvatar)
+      if (maiUsername) setUsername(maiUsername)
       
       if (maiToken) {
         setStatus({ loggedIn: true, email: maiEmail || '' })
@@ -500,7 +513,8 @@ function AccountEntry() {
 
   const loggedIn = status?.loggedIn ?? false
   const email = status?.email ?? ''
-  const initial = email ? email[0].toUpperCase() : loggedIn ? 'G' : '?'
+  const displayName = username || (email ? email.split('@')[0] : '')
+  const initial = displayName ? displayName[0].toUpperCase() : loggedIn ? 'U' : '?'
   const errorText =
     loginError === 'timeout'
       ? t('loginTimeout')
@@ -536,8 +550,6 @@ function AccountEntry() {
   useEffect(() => {
     if (!langFly) return
     const close = (event: Event) => {
-      // the flyout scrolls its own options (max-height + overflow-y) — only
-      // outside scrolls detach it from its row
       const target = event.target as Element | null
       if (target instanceof Element && target.closest('.lang-flyout')) return
       setLangFly(null)
@@ -568,7 +580,7 @@ function AccountEntry() {
           {loggedIn ? (
             <div className="account-menu-info">
               <span className="account-menu-email" title={email}>
-                {email || t('loggedIn')}
+                {displayName ? `${displayName} (${email})` : (email || t('loggedIn'))}
               </span>
             </div>
           ) : (
@@ -578,7 +590,23 @@ function AccountEntry() {
               onClick={startLogin}
               title={waiting ? t('waitingLogin') : undefined}
             >
-              {waiting ? t('waitingShort') : t('loginGenspark')}
+              {waiting ? t('waitingShort') : 'Se connecter'}
+            </button>
+          )}
+          {loggedIn && (
+            <button
+              className="account-menu-item"
+              role="menuitem"
+              onClick={() => {
+                closeMenu()
+                onOpenSettings?.()
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+              <span>Paramètres</span>
             </button>
           )}
           <div className="account-menu-divider" />
@@ -680,10 +708,15 @@ function AccountEntry() {
                 setLoggingOut(true)
                 localStorage.removeItem('mai_token')
                 localStorage.removeItem('mai_email')
+                localStorage.removeItem('mai_avatar')
+                localStorage.removeItem('mai_username')
+                localStorage.removeItem('mai_api_key')
                 void window.aiOffice.accountLogout().then(() => {
                   setLoggingOut(false)
                   closeMenu()
                   setStatus({ loggedIn: false })
+                  setAvatarUrl('')
+                  setUsername('')
                 })
               }}
             >
@@ -713,15 +746,16 @@ function AccountEntry() {
         aria-expanded={menuOpen}
         title={
           loggedIn
-            ? email || t('loggedInGenspark')
+            ? (displayName ? `${displayName} (${email})` : email) || 'Compte mAI'
             : waiting
               ? t('waitingLogin')
-              : (errorText ?? t('loginGenspark'))
+              : (errorText ?? 'Se connecter')
         }
         aria-label={loggedIn ? t('account') : t('login')}
       >
         <span
           className={`account-avatar${loggedIn ? ' logged-in' : ''}${waiting ? ' waiting' : ''}`}
+          style={{ overflow: 'hidden', padding: 0 }}
         >
           {waiting ? (
             <svg
@@ -743,6 +777,8 @@ function AccountEntry() {
                 strokeLinecap="round"
               />
             </svg>
+          ) : avatarUrl ? (
+            <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           ) : (
             initial
           )}
@@ -750,16 +786,16 @@ function AccountEntry() {
         <span className="account-text">
           {loggedIn ? (
             <>
-              <span className="account-name">{email ? email.split('@')[0] : t('loggedIn')}</span>
+              <span className="account-name">{displayName || t('loggedIn')}</span>
               <span className="account-sub" title={email}>
                 {email || 'mAI Office'}
               </span>
             </>
           ) : (
             <>
-              <span className="account-name">{waiting ? t('waitingShort') : t('login')}</span>
+              <span className="account-name">{waiting ? t('waitingShort') : 'Connexion'}</span>
               <span className={`account-sub${!waiting && errorText ? ' error' : ''}`}>
-                {!waiting && errorText ? errorText : t('accountGenspark')}
+                {!waiting && errorText ? errorText : 'Compte mAI'}
               </span>
             </>
           )}
@@ -767,10 +803,15 @@ function AccountEntry() {
       </button>
       {showAuth && (
         <AuthModal
-          onSuccess={(token, tier, userEmail) => {
+          onSuccess={(token, tier, userEmail, userApiKey, regUsername) => {
             setShowAuth(false)
             localStorage.setItem('mai_token', token)
             localStorage.setItem('mai_email', userEmail)
+            if (userApiKey) localStorage.setItem('mai_api_key', userApiKey)
+            if (regUsername) {
+              localStorage.setItem('mai_username', regUsername)
+              setUsername(regUsername)
+            }
             setStatus({ loggedIn: true, email: userEmail })
           }}
           onCancel={() => setShowAuth(false)}
@@ -792,7 +833,7 @@ export function Home() {
   /** sidebar Recent / Starred counts under the active type filter */
   const [navCounts, setNavCounts] = useState({ recent: 0, starred: 0 })
   const [loadingMore, setLoadingMore] = useState(false)
-  const [view, setView] = useState<'recent' | 'starred'>('recent')
+  const [view, setView] = useState<'recent' | 'starred' | 'settings'>('recent')
   const [filter, setFilter] = useState('all')
   const [rowMenu, setRowMenu] = useState<string | null>(null)
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
@@ -1034,7 +1075,7 @@ export function Home() {
   const projAllSelected =
     projectFileEntries.length > 0 && projSelectedPaths.length === projectFileEntries.length
 
-  const changeView = (next: 'recent' | 'starred') => {
+  const changeView = (next: 'recent' | 'starred' | 'settings') => {
     setView(next)
     setSelected(new Set())
     setRowMenu(null)
@@ -1676,6 +1717,19 @@ export function Home() {
             <span className="nav-label">{t('navStarred')}</span>
             <span className="nav-count">{navCounts.starred}</span>
           </button>
+          <button
+            className={`nav-item${view === 'settings' && !selectedProjectId ? ' active' : ''}`}
+            onClick={() => {
+              changeView('settings')
+              setSelectedProjectId(null)
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+            <span className="nav-label">Paramètres</span>
+          </button>
         </nav>
 
         {/* project sidebar */}
@@ -1697,10 +1751,16 @@ export function Home() {
           </>
         )}
 
-        <AccountEntry />
+        <AccountEntry onOpenSettings={() => changeView('settings')} />
       </aside>
 
-      {selectedProjectId ? renderProjectContent() : renderGlobalContent()}
+      {view === 'settings' ? (
+        <SettingsView onClose={() => setView('recent')} />
+      ) : selectedProjectId ? (
+        renderProjectContent()
+      ) : (
+        renderGlobalContent()
+      )}
 
       {confirmDelete && (
         <div className="modal-overlay" onClick={() => setConfirmDelete(null)}>
