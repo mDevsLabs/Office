@@ -16,6 +16,7 @@
 
 const { existsSync } = require('node:fs')
 const { join } = require('node:path')
+const rootPkg = require('../../package.json')
 
 const updateUrl = process.env.GENOFFICE_UPDATE_URL
 
@@ -58,6 +59,9 @@ const config = {
   productName: 'mAI Office',
   executableName: 'mai-office',
   electronVersion: '41.7.1',
+  extraMetadata: {
+    version: rootPkg.version,
+  },
   homepage: 'https://github.com/mDevsLabs/mAI-Office',
   directories: {
     output: 'release',
