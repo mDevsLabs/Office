@@ -58,6 +58,7 @@ const config = {
   productName: 'mAI Office',
   executableName: 'mai-office',
   electronVersion: '41.7.1',
+  homepage: 'https://github.com/mDevsLabs/mAI-Office',
   directories: {
     output: 'release',
   },
@@ -165,6 +166,7 @@ const config = {
   },
   linux: {
     executableName: 'mai-office',
+    maintainer: 'mAI <mprojectsofficiel@gmail.com>',
     target: [
       {
         target: 'AppImage',

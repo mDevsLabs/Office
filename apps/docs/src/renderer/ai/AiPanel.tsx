@@ -189,7 +189,7 @@ export function AiPanel({
   /** projectId/chatId of the current chat */
   const chatRefIds = useRef<{ projectId: string; chatId: string } | null>(null)
   const [selectedModel, setSelectedModel] = useState(
-    () => localStorage.getItem('mai_model') || 'poolside/laguna-xs-2.1:free',
+    () => localStorage.getItem('mai_default_model') || localStorage.getItem('mai_model') || 'google/gemma-4-26b-a4b-it:free',
   )
 
   // Inject the mai_token and mai_model into the settings so the backend can use it
@@ -197,7 +197,7 @@ export function AiPanel({
   if (!currentSettings.providers) currentSettings.providers = {}
   if (!currentSettings.providers.mai) currentSettings.providers.mai = { apiKey: '', model: '' }
   currentSettings.providers.mai.apiKey = localStorage.getItem('mai_api_key') || localStorage.getItem('mai_token') || ''
-  currentSettings.providers.mai.model = selectedModel || localStorage.getItem('mai_model') || 'poolside/laguna-xs-2.1:free'
+  currentSettings.providers.mai.model = selectedModel || localStorage.getItem('mai_default_model') || localStorage.getItem('mai_model') || 'google/gemma-4-26b-a4b-it:free'
   
   // latest props for the loop's closures (the loop instance outlives renders)
   const editorRef = useRef(editor)

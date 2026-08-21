@@ -544,7 +544,7 @@ export function App(): React.JSX.Element {
       mai: {
         ...(aiSettings.providers?.mai || {}),
         apiKey: localStorage.getItem('mai_api_key') || localStorage.getItem('mai_token') || '',
-        model: localStorage.getItem('mai_model') || aiSettings.providers?.mai?.model || 'poolside/laguna-xs-2.1:free',
+        model: localStorage.getItem('mai_default_model') || localStorage.getItem('mai_model') || aiSettings.providers?.mai?.model || 'google/gemma-4-26b-a4b-it:free',
       }
     }
   } : null

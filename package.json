@@ -1,9 +1,14 @@
 {
-  "name": "@mdevs/mai-office",
-  "version": "0.1.0",
+  "name": "@mdevs/office",
+  "version": "0.5.0",
   "private": true,
   "description": "Avec mAI Office, créez et imaginez plus rapidement !",
   "license": "MIT",
+  "homepage": "https://github.com/mDevsLabs/mAI-Office",
+  "author": {
+    "name": "mAI",
+    "email": "mprojectsofficiel@gmail.com"
+  },
   "engines": {
     "node": ">=20",
     "npm": ">=10"

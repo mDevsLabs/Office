@@ -292,7 +292,7 @@ export function AiPanel({
   if (!currentSettings.providers) currentSettings.providers = {}
   if (!currentSettings.providers.mai) currentSettings.providers.mai = { apiKey: '', model: '' }
   currentSettings.providers.mai.apiKey = localStorage.getItem('mai_api_key') || localStorage.getItem('mai_token') || ''
-  currentSettings.providers.mai.model = localStorage.getItem('mai_model') || 'poolside/laguna-xs-2.1:free'
+  currentSettings.providers.mai.model = localStorage.getItem('mai_default_model') || localStorage.getItem('mai_model') || 'google/gemma-4-26b-a4b-it:free'
 
   const settingsRef = useRef(currentSettings)
   settingsRef.current = currentSettings

@@ -7,7 +7,7 @@ export const AI_PROVIDERS: AiProviderMeta[] = [
     id: 'mai' as AiProviderId,
     label: 'mAI Office',
     models: [], // Les modèles seront fetchés dynamiquement depuis /v1/models
-    defaultModel: 'poolside/laguna-xs-2.1:free',
+    defaultModel: 'google/gemma-4-26b-a4b-it:free',
     keyPlaceholder: 'mAI API Key',
   },
 ]

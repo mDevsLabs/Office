@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { IconEnter, IconSend, IconStop } from './icons'
+import { formatModelDisplayName, DEFAULT_AI_MODELS } from './models'
 
 // Keep in sync with the CSS `max-height` on `.ai-input-box textarea` (7 lines à 21px)
 const MAX_TEXTAREA_HEIGHT = 147
@@ -70,17 +71,29 @@ export function AiComposer({
   const ref = textareaRef ?? innerRef
   const canSend = value.trim().length > 0 && !busy
 
-  const [internalModels, setInternalModels] = React.useState<{ id: string; name: string }[]>([
-    { id: 'poolside/laguna-xs-2.1:free', name: 'Poolside Laguna XS 2.1 (free)' },
-    { id: 'poolside/laguna-s-2.1:free', name: 'Poolside Laguna S 2.1 (free)' },
-    { id: 'google/gemma-4-26b-a4b-it:free', name: 'Google Gemma 4 26B (free)' },
-    { id: 'openai/gpt-oss-20b:free', name: 'OpenAI GPT OSS 20B (free)' },
-  ])
+  const [internalModels, setInternalModels] = React.useState<{ id: string; name: string }[]>(DEFAULT_AI_MODELS)
   const [internalSelectedModel, setInternalSelectedModel] = React.useState(
-    () => localStorage.getItem('mai_model') || 'poolside/laguna-xs-2.1:free',
+    () => localStorage.getItem('mai_default_model') || localStorage.getItem('mai_model') || 'google/gemma-4-26b-a4b-it:free',
   )
   const displayModels = models && models.length > 0 ? models : internalModels
-  const currentModel = selectedModel || internalSelectedModel || 'poolside/laguna-xs-2.1:free'
+  const currentModel = selectedModel || internalSelectedModel || 'google/gemma-4-26b-a4b-it:free'
+
+  // Listen for model changes across windows / components
+  React.useEffect(() => {
+    const handleModelUpdate = () => {
+      const saved = localStorage.getItem('mai_default_model') || localStorage.getItem('mai_model')
+      if (saved && saved !== internalSelectedModel) {
+        setInternalSelectedModel(saved)
+        if (onModelChange) onModelChange(saved)
+      }
+    }
+    window.addEventListener('mai_model_updated', handleModelUpdate)
+    window.addEventListener('storage', handleModelUpdate)
+    return () => {
+      window.removeEventListener('mai_model_updated', handleModelUpdate)
+      window.removeEventListener('storage', handleModelUpdate)
+    }
+  }, [internalSelectedModel, onModelChange])
 
   React.useEffect(() => {
     async function fetchModels() {
@@ -94,9 +107,12 @@ export function AiComposer({
         const modelsRes = await fetch('https://mai.val.run/v1/models', { headers })
         const modelsData = await modelsRes.json()
         if (modelsData && modelsData.data && modelsData.data.length > 0) {
-          const list = modelsData.data.map((m: any) => ({ id: m.id, name: m.name || m.id }))
+          const list = modelsData.data.map((m: any) => ({
+            id: m.id,
+            name: formatModelDisplayName(m.id, m.name),
+          }))
           setInternalModels(list)
-          const savedModel = localStorage.getItem('mai_model')
+          const savedModel = localStorage.getItem('mai_default_model') || localStorage.getItem('mai_model')
           const isValidSaved = list.some((m: any) => m.id === savedModel)
           const nextModel = isValidSaved && savedModel ? savedModel : (selectedModel || list[0].id)
           setInternalSelectedModel(nextModel)
@@ -158,7 +174,7 @@ export function AiComposer({
           gap: '6px',
           padding: '6px 10px 8px',
           minWidth: 0,
-          boxContent: 'border-box',
+          boxSizing: 'border-box',
           overflow: 'hidden',
         }}
       >
@@ -192,10 +208,11 @@ export function AiComposer({
                   const val = e.target.value
                   setInternalSelectedModel(val)
                   localStorage.setItem('mai_model', val)
+                  window.dispatchEvent(new Event('mai_model_updated'))
                   if (onModelChange) onModelChange(val)
                 }}
                 disabled={busy}
-                title={`Modèle sélectionné : ${displayModels.find((m) => m.id === currentModel)?.name || currentModel}`}
+                title={`Modèle sélectionné : ${displayModels.find((m) => m.id === currentModel)?.name || formatModelDisplayName(currentModel)}`}
                 style={{
                   width: '100%',
                   maxWidth: '140px',
@@ -217,7 +234,7 @@ export function AiComposer({
               >
                 {displayModels.map((m) => (
                   <option key={m.id} value={m.id} style={{ background: '#222', color: '#fff' }}>
-                    {m.name || m.id}
+                    {m.name || formatModelDisplayName(m.id)}
                   </option>
                 ))}
               </select>

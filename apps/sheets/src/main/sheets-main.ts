@@ -2050,7 +2050,7 @@ export function registerSheetsAiIpc(): void {
     }
     const effectiveConfig = {
       ...config,
-      model: config?.model || 'poolside/laguna-xs-2.1:free',
+      model: config?.model || 'google/gemma-4-26b-a4b-it:free',
     }
     try {
       return await chatForProvider(provider, effectiveConfig, request.system, request.user)
@@ -2085,7 +2085,7 @@ export function registerSheetsAiIpc(): void {
     }
     const effectiveConfig = {
       ...config,
-      model: config?.model || 'poolside/laguna-xs-2.1:free',
+      model: config?.model || 'google/gemma-4-26b-a4b-it:free',
     }
     const controller = new AbortController()
     entry.aiStreams.set(requestId, controller)

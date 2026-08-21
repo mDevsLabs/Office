@@ -34,5 +34,9 @@
     "vite-plugin-static-copy": "^3.0.0",
     "vitest": "^4.1.10"
   },
-  "author": "mAI Office"
+  "author": {
+    "name": "mAI",
+    "email": "mprojectsofficiel@gmail.com"
+  },
+  "homepage": "https://github.com/mDevsLabs/mAI-Office"
 }

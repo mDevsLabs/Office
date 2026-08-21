@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "private": true,
   "description": "Unified mAI Office shell: one app hosting the docs and sheets modules behind a home/launcher window",
+  "homepage": "https://github.com/mDevsLabs/mAI-Office",
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev --watch",
@@ -41,5 +42,8 @@
     "vite": "^7.3.1",
     "vitest": "^4.1.10"
   },
-  "author": "mAI Office"
+  "author": {
+    "name": "mAI",
+    "email": "mprojectsofficiel@gmail.com"
+  }
 }

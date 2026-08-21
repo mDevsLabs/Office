@@ -347,6 +347,27 @@ function openAiMessages(system: string, messages: AgentMessage[]): unknown[] {
   return out
 }
 
+const FALLBACK_FREE_MODELS = [
+  'google/gemma-4-26b-a4b-it:free',
+  'openai/gpt-oss-20b:free',
+  'nvidia/nemotron-3.5-lightning:free',
+  'cohere/north-mini-code:free',
+  'z-ai/glm-5.2:free',
+  'poolside/laguna-xs-2.1:free',
+  'poolside/laguna-s-2.1:free',
+]
+
+function formatToolsInSystemPrompt(system: string, tools: AgentToolDef[]): string {
+  if (!tools || tools.length === 0) return system
+  const toolDescriptions = tools
+    .map(
+      (t) =>
+        `- ${t.name}: ${t.description || ''}\n  Parameters: ${JSON.stringify(t.inputSchema || {})}`,
+    )
+    .join('\n')
+  return `${system}\n\nAvailable tools:\n${toolDescriptions}`
+}
+
 export async function streamOpenAiCompatible(
   baseUrl: string,
   config: AiProviderConfig,
@@ -358,79 +379,131 @@ export async function streamOpenAiCompatible(
 ): Promise<void> {
   const cleanBase = baseUrl.replace(/\/$/, '')
   const endpoint = cleanBase.endsWith('/v1') ? `${cleanBase}/chat/completions` : `${cleanBase}/v1/chat/completions`
-  const modelName = config.model || 'poolside/laguna-xs-2.1:free'
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    signal: cb.signal,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: modelName,
-      max_tokens: maxTokens,
-      messages: openAiMessages(system, messages),
-      ...(tools.length > 0
-        ? {
-            tools: tools.map((t) => ({
-              type: 'function',
-              function: { name: t.name, description: t.description, parameters: t.inputSchema },
-            })),
+  const primaryModel = config.model || 'google/gemma-4-26b-a4b-it:free'
+  const modelsToTry = [primaryModel, ...FALLBACK_FREE_MODELS.filter((m) => m !== primaryModel)]
+
+  let lastError = ''
+
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const modelName = modelsToTry[i]!
+    const toolModes = tools.length > 0 ? [true, false] : [false]
+
+    for (const includeTools of toolModes) {
+      if (cb.signal.aborted) return
+
+      try {
+        const effectiveSystem = includeTools ? system : (tools.length > 0 ? formatToolsInSystemPrompt(system, tools) : system)
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          signal: cb.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${config.apiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelName,
+            max_tokens: maxTokens,
+            messages: openAiMessages(effectiveSystem, messages),
+            ...(includeTools && tools.length > 0
+              ? {
+                  tools: tools.map((t) => ({
+                    type: 'function',
+                    function: {
+                      name: t.name,
+                      description: t.description,
+                      parameters: t.inputSchema || { type: 'object', properties: {} },
+                    },
+                  })),
+                }
+              : {}),
+            temperature: 0.3,
+            stream: true,
+          }),
+        })
+
+        if (!response.ok || !response.body) {
+          const rawBody = await response.text()
+          lastError = `HTTP ${response.status}: ${httpBodyDetail(rawBody)}`
+          if (
+            response.status >= 500 ||
+            response.status === 404 ||
+            response.status === 400 ||
+            rawBody.includes('Failed to process') ||
+            rawBody.includes('not found')
+          ) {
+            continue
           }
-        : {}),
-      temperature: 0.3,
-      stream: true,
-    }),
-  })
-  if (!response.ok || !response.body) {
-    throw new Error(`HTTP ${response.status}: ${httpBodyDetail(await response.text())}`)
-  }
-  // tool call arguments stream in fragments keyed by index
-  const pendingTools = new Map<number, { id: string; name: string; json: string }>()
-  const flushTools = () => {
-    for (const pending of pendingTools.values()) {
-      if (pending.name) {
-        const { input, error } = parseToolInput(pending.json)
-        cb.onToolCall({ id: pending.id, name: pending.name, input, inputError: error })
-      }
-    }
-    pendingTools.clear()
-  }
-  for await (const line of sseLines(response.body)) {
-    if (!line.startsWith('data:')) continue
-    const payload = line.slice(5).trim()
-    if (!payload) continue
-    if (payload === '[DONE]') break
-    const event = JSON.parse(payload) as {
-      choices?: Array<{
-        delta?: {
-          content?: string
-          tool_calls?: Array<{
-            index: number
-            id?: string
-            function?: { name?: string; arguments?: string }
-          }>
+          throw new Error(lastError)
         }
-        finish_reason?: string | null
-      }>
-    }
-    const choice = event.choices?.[0]
-    if (!choice) continue
-    if (choice.delta?.content) cb.onDelta(choice.delta.content)
-    for (const tc of choice.delta?.tool_calls ?? []) {
-      const pending = pendingTools.get(tc.index) ?? {
-        id: tc.id ?? crypto.randomUUID(),
-        name: '',
-        json: '',
+
+        // tool call arguments stream in fragments keyed by index
+        const pendingTools = new Map<number, { id: string; name: string; json: string }>()
+        const flushTools = () => {
+          for (const pending of pendingTools.values()) {
+            if (pending.name) {
+              const { input, error } = parseToolInput(pending.json)
+              cb.onToolCall({ id: pending.id, name: pending.name, input, inputError: error })
+            }
+          }
+          pendingTools.clear()
+        }
+
+        let hasReceivedAnyChunk = false
+
+        for await (const line of sseLines(response.body)) {
+          if (cb.signal.aborted) return
+          if (!line.startsWith('data:')) continue
+          const payload = line.slice(5).trim()
+          if (!payload) continue
+          if (payload === '[DONE]') break
+          const event = JSON.parse(payload) as {
+            choices?: Array<{
+              delta?: {
+                content?: string
+                tool_calls?: Array<{
+                  index: number
+                  id?: string
+                  function?: { name?: string; arguments?: string }
+                }>
+              }
+              finish_reason?: string | null
+            }>
+          }
+          const choice = event.choices?.[0]
+          if (!choice) continue
+          if (choice.delta?.content) {
+            hasReceivedAnyChunk = true
+            cb.onDelta(choice.delta.content)
+          }
+          for (const tc of choice.delta?.tool_calls ?? []) {
+            hasReceivedAnyChunk = true
+            const pending = pendingTools.get(tc.index) ?? {
+              id: tc.id ?? crypto.randomUUID(),
+              name: '',
+              json: '',
+            }
+            if (tc.id) pending.id = tc.id
+            if (tc.function?.name) pending.name += tc.function.name
+            if (tc.function?.arguments) pending.json += tc.function.arguments
+            pendingTools.set(tc.index, pending)
+          }
+          if (choice.finish_reason) flushTools()
+        }
+        flushTools()
+
+        return
+      } catch (err: any) {
+        if (cb.signal.aborted) return
+        lastError = err instanceof Error ? err.message : String(err)
+        continue
       }
-      if (tc.id) pending.id = tc.id
-      if (tc.function?.name) pending.name += tc.function.name
-      if (tc.function?.arguments) pending.json += tc.function.arguments
-      pendingTools.set(tc.index, pending)
     }
-    if (choice.finish_reason) flushTools()
   }
-  flushTools()
+
+  throw new Error(
+    lastError ||
+      "Erreur : Impossible de traiter la requête IA. Veuillez vérifier votre connexion ou sélectionner un autre modèle dans la barre d'outils IA."
+  )
 }
 
 import { MAI_API_BASE } from './providers'
@@ -448,7 +521,7 @@ export async function streamForProvider(
   if (provider === 'mai') {
     const effectiveConfig: AiProviderConfig = {
       ...config,
-      model: config.model || 'poolside/laguna-xs-2.1:free',
+      model: config.model || 'google/gemma-4-26b-a4b-it:free',
     }
 
     return streamOpenAiCompatible(

@@ -21,4 +21,10 @@ export {
 } from './icons'
 export { Markdown } from './Markdown'
 export { AuthModal } from './Auth'
+export {
+  formatModelDisplayName,
+  KNOWN_MODEL_NAMES,
+  DEFAULT_AI_MODELS,
+  type AIModelInfo,
+} from './models'
 

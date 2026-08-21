@@ -10,6 +10,8 @@ import {
   IconArrowLeft,
   IconRefresh,
   GensparkMark,
+  formatModelDisplayName,
+  DEFAULT_AI_MODELS,
 } from '@genoffice/ui'
 
 const API_URL = 'https://mai.val.run'
@@ -70,8 +72,16 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
   const [upgrading, setUpgrading] = useState(false)
 
   // ── API Usage State ──
+  const [apiRequestsUsed, setApiRequestsUsed] = useState(0)
+  const [customApiLimit, setCustomApiLimit] = useState<number | null>(null)
   const [apiKeys, setApiKeys] = useState<any[]>([])
   const [appVersion, setAppVersion] = useState('0.1.0')
+
+  // ── Model Preferences State ──
+  const [availableModels, setAvailableModels] = useState<{ id: string; name: string }[]>(DEFAULT_AI_MODELS)
+  const [defaultModel, setDefaultModel] = useState(
+    () => localStorage.getItem('mai_default_model') || localStorage.getItem('mai_model') || 'google/gemma-4-26b-a4b-it:free',
+  )
 
   // Load User & Usage Data
   const loadData = async () => {
@@ -96,6 +106,12 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
         setAiTokensUsed(u.tokensUsed || 0)
         setAiLimit(u.limit || 2_000_000)
         setAiResetAt(u.resetAt || '')
+
+        // Real API usage from /usage
+        const realApiReqs = u.apiRequestsUsed ?? u.apiRequests ?? u.requestsUsed ?? u.requestCount ?? u.totalRequests ?? (u.apiUsage?.requests) ?? (u.tokensUsed ? Math.ceil(u.tokensUsed / 1000) : 0)
+        setApiRequestsUsed(realApiReqs)
+        if (u.apiLimit) setCustomApiLimit(u.apiLimit)
+
         if (u.username) localStorage.setItem('mai_username', u.username)
         if (u.tier) localStorage.setItem('mai_tier', u.tier)
         window.dispatchEvent(new Event('mai_profile_updated'))
@@ -115,7 +131,26 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
         }
       }
 
-      // 3. App Version
+      // 3. Load Available Models
+      try {
+        const modelsRes = await fetch(`${API_URL}/v1/models`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (modelsRes.ok) {
+          const mData = await modelsRes.json()
+          if (mData?.data && mData.data.length > 0) {
+            const list = mData.data.map((m: any) => ({
+              id: m.id,
+              name: formatModelDisplayName(m.id, m.name),
+            }))
+            setAvailableModels(list)
+          }
+        }
+      } catch (err) {
+        console.error('Erreur chargement modèles:', err)
+      }
+
+      // 4. App Version
       void window.aiOffice?.getAppVersion?.().then((v) => {
         if (v) setAppVersion(v)
       })
@@ -246,9 +281,27 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
 
   const initial = username ? username[0].toUpperCase() : email ? email[0].toUpperCase() : 'U'
   const percentUsed = Math.min(100, Math.round((aiTokensUsed / (aiLimit || 1)) * 100))
-  const totalApiRequests = apiKeys.reduce((acc, k) => acc + (k.request_count || 0), 0)
-  const apiLimit = tier === 'Max' ? 1_000_000 : tier === 'Pro' ? 200_000 : tier === 'Plus' ? 50_000 : 10_000
+  const totalApiRequests = Math.max(
+    apiRequestsUsed,
+    apiKeys.reduce((acc, k) => acc + (k.request_count || 0), 0)
+  )
+  const apiLimit = customApiLimit || (tier === 'Max' ? 1_000_000 : tier === 'Pro' ? 200_000 : tier === 'Plus' ? 50_000 : 10_000)
   const apiPercentUsed = Math.min(100, Math.round((totalApiRequests / (apiLimit || 1)) * 100))
+
+  const getMonthlyResetFormatted = () => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth()
+    // Reset date is 1st of current month at 02:00 CET
+    const thisMonthReset = new Date(year, month, 1, 2, 0, 0, 0)
+    const targetDate = now.getTime() < thisMonthReset.getTime()
+      ? thisMonthReset
+      : new Date(year, month + 1, 1, 2, 0, 0, 0)
+
+    const monthName = targetDate.toLocaleDateString('fr-FR', { month: 'long' })
+    const dayStr = targetDate.getDate() === 1 ? '1er' : `${targetDate.getDate()}`
+    return `${dayStr} ${monthName} à 02:00 CET`
+  }
 
   const getFullAvatarUrl = (url: string) => {
     if (!url) return ''
@@ -705,7 +758,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
           <div style={{ maxWidth: '640px' }}>
             <div className="settings-card">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <h3 className="settings-card-title" style={{ margin: 0 }}>Quota Hebdomadaire de Tokens</h3>
+                <h3 className="settings-card-title" style={{ margin: 0 }}>Quota Mensuel de Tokens</h3>
                 <span className={`settings-badge settings-badge-${tier.toLowerCase()}`}>Forfait {tier}</span>
               </div>
               <p className="settings-card-sub">
@@ -732,12 +785,10 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
                 <span>{Math.max(0, aiLimit - aiTokensUsed).toLocaleString()} restants</span>
               </div>
 
-              {aiResetAt && (
-                <div style={{ marginTop: '16px', fontSize: '12px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <IconRefresh size={14} />
-                  <span>Réinitialisation le {new Date(aiResetAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              )}
+              <div style={{ marginTop: '16px', fontSize: '12px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <IconRefresh size={14} />
+                <span>Réinitialisation le {getMonthlyResetFormatted()}</span>
+              </div>
             </div>
 
             <div className="settings-card">
@@ -792,12 +843,10 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
                 <span>{Math.max(0, apiLimit - totalApiRequests).toLocaleString()} restantes</span>
               </div>
 
-              {aiResetAt && (
-                <div style={{ marginTop: '16px', fontSize: '12px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <IconRefresh size={14} />
-                  <span>Réinitialisation le {new Date(aiResetAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              )}
+              <div style={{ marginTop: '16px', fontSize: '12px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <IconRefresh size={14} />
+                <span>Réinitialisation le {getMonthlyResetFormatted()}</span>
+              </div>
             </div>
 
             <div className="settings-card">
@@ -823,6 +872,34 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
         {/* ── TAB 4: PRÉFÉRENCES ET LANGUE ── */}
         {activeTab === 'preferences' && (
           <div style={{ maxWidth: '640px' }}>
+            <div className="settings-card">
+              <h3 className="settings-card-title">Modèle d'IA par défaut</h3>
+              <p className="settings-card-sub">Choisissez le modèle d'intelligence artificielle utilisé par défaut lors de vos requêtes dans mAI Office.</p>
+
+              <div className="settings-input-group">
+                <label className="settings-label">Modèle sélectionné</label>
+                <select
+                  className="settings-input"
+                  value={defaultModel}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setDefaultModel(val)
+                    localStorage.setItem('mai_default_model', val)
+                    localStorage.setItem('mai_model', val)
+                    window.dispatchEvent(new Event('mai_model_updated'))
+                    const modelName = availableModels.find((m) => m.id === val)?.name || formatModelDisplayName(val)
+                    setStatusMsg({ type: 'success', text: `Modèle par défaut mis à jour : ${modelName}` })
+                  }}
+                >
+                  {availableModels.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name || formatModelDisplayName(m.id)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="settings-card">
               <h3 className="settings-card-title">Langue de l'interface</h3>
               <p className="settings-card-sub">Choisissez la langue d'affichage de mAI Office.</p>

@@ -45,7 +45,11 @@
     "vite": "^7.3.1",
     "vitest": "^4.1.0"
   },
-  "author": "mAI Office",
+  "author": {
+    "name": "mAI",
+    "email": "mprojectsofficiel@gmail.com"
+  },
+  "homepage": "https://github.com/mDevsLabs/mAI-Office",
   "build": {
     "appId": "com.maioffice.docs",
     "productName": "mAI Office Docs",
