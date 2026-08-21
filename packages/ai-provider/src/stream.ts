@@ -5,7 +5,7 @@ import type { AiProviderConfig, AiProviderId } from './types'
 // ---- streaming (SSE line splitting shared by all providers) ----
 
 export async function* sseLines(
-  body: NodeJS.ReadableStream | ReadableStream<Uint8Array>,
+  body: ReadableStream<Uint8Array> | any,
 ): AsyncGenerator<string> {
   const decoder = new TextDecoder()
   let buffer = ''
@@ -356,7 +356,10 @@ export async function streamOpenAiCompatible(
   maxTokens: number,
   cb: StreamCallbacks,
 ): Promise<void> {
-  const response = await fetch(`${baseUrl.replace(/\/$/, '')}/chat/completions`, {
+  const cleanBase = baseUrl.replace(/\/$/, '')
+  const endpoint = cleanBase.endsWith('/v1') ? `${cleanBase}/chat/completions` : `${cleanBase}/v1/chat/completions`
+  const modelName = config.model || 'google/gemini-2.5-flash:free'
+  const response = await fetch(endpoint, {
     method: 'POST',
     signal: cb.signal,
     headers: {
@@ -364,7 +367,7 @@ export async function streamOpenAiCompatible(
       Authorization: `Bearer ${config.apiKey}`,
     },
     body: JSON.stringify({
-      model: config.model,
+      model: modelName,
       max_tokens: maxTokens,
       messages: openAiMessages(system, messages),
       ...(tools.length > 0
@@ -487,10 +490,15 @@ export async function streamForProvider(
       },
     }
 
+    const effectiveConfig: AiProviderConfig = {
+      ...config,
+      model: config.model || 'google/gemini-2.5-flash:free',
+    }
+
     try {
       await streamOpenAiCompatible(
-        MAI_API_BASE,
-        config,
+        `${MAI_API_BASE}/v1`,
+        effectiveConfig,
         system,
         messages,
         tools,
@@ -501,7 +509,7 @@ export async function streamForProvider(
       // 4. Calcul et déduction de la somme des tokens (Prompt + Completion)
       const completionTokens = Math.max(1, Math.round(responseChars / 4))
       const totalTokens = promptTokens + completionTokens
-      void logUsage(config, totalTokens)
+      void logUsage(effectiveConfig, totalTokens)
     }
     return
   }

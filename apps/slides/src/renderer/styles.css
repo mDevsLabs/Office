@@ -2150,12 +2150,67 @@ body.vib .slide-list {
 .ai-input-footer {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 6px;
   padding: 4px 8px 8px 10px;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.ai-input-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.ai-input-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.ai-model-select-wrapper {
+  min-width: 0;
+  max-width: 140px;
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+}
+
+.ai-model-select {
+  width: 100%;
+  max-width: 140px;
+  min-width: 60px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--radius-6, 6px);
+  border: 1px solid var(--color-border-default);
+  background: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.ai-model-select:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-text-primary);
 }
 
 .ai-input-footer .ai-send-btn {
-  margin-left: auto;
+  margin-left: 0;
+  flex-shrink: 0;
 }
 
 /* Attach button inside the panel composer: brand paperclip art,

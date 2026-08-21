@@ -2048,9 +2048,12 @@ export function registerSheetsAiIpc(): void {
         error: provider === 'mai' ? tm('errGskNotLoggedIn') : tm('errNoApiKey', { provider }),
       }
     }
-    if (!config.model) return { ok: false, error: tm('errNoModel') }
+    const effectiveConfig = {
+      ...config,
+      model: config?.model || 'google/gemini-2.5-flash:free',
+    }
     try {
-      return await chatForProvider(provider, config, request.system, request.user)
+      return await chatForProvider(provider, effectiveConfig, request.system, request.user)
     } catch (err) {
       return { ok: false, error: String(err) }
     }
@@ -2080,14 +2083,14 @@ export function registerSheetsAiIpc(): void {
       })
       return
     }
-    if (!config.model) {
-      send({ requestId, type: 'error', error: tm('errNoModel') })
-      return
+    const effectiveConfig = {
+      ...config,
+      model: config?.model || 'google/gemini-2.5-flash:free',
     }
     const controller = new AbortController()
     entry.aiStreams.set(requestId, controller)
     try {
-      await streamForProvider(provider, config, system, messages, tools, maxTokens, {
+      await streamForProvider(provider, effectiveConfig, system, messages, tools, maxTokens, {
         signal: controller.signal,
         onDelta: (text) => send({ requestId, type: 'delta', text }),
         onToolCall: (toolCall) => send({ requestId, type: 'tool-call', toolCall }),

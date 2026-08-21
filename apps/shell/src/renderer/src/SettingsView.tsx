@@ -1,6 +1,20 @@
 import React, { useEffect, useState } from 'react'
 import { useI18n } from './locale'
 import type { Lang } from '@genoffice/i18n'
+import {
+  IconSettings,
+  IconUser,
+  IconChart,
+  IconKey,
+  IconGlobe,
+  IconArrowLeft,
+  IconRefresh,
+  IconEye,
+  IconEyeOff,
+  IconCopy,
+  IconCheck,
+  GensparkMark,
+} from '@genoffice/ui'
 
 const API_URL = 'https://mai.val.run'
 
@@ -50,6 +64,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarLoadError, setAvatarLoadError] = useState(false)
 
   // ── AI Usage State ──
   const [aiTokensUsed, setAiTokensUsed] = useState(0)
@@ -138,6 +153,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
       if (!res.ok) throw new Error(data.error || "Erreur lors de l'upload de l'avatar")
 
       setAvatarUrl(data.avatarUrl)
+      setAvatarLoadError(false)
       localStorage.setItem('mai_avatar', data.avatarUrl)
       setStatusMsg({ type: 'success', text: 'Photo de profil mise à jour avec succès !' })
     } catch (err: any) {
@@ -217,7 +233,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
         localStorage.setItem('mai_tier', data.tier)
       }
       setUpgradeCode('')
-      setStatusMsg({ type: 'success', text: `Félicitations ! Votre forfait est désormais surclassé en ${data.tier} 🎉` })
+      setStatusMsg({ type: 'success', text: `Félicitations ! Votre forfait est désormais surclassé en ${data.tier}.` })
       loadData()
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message })
@@ -507,7 +523,9 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
       {/* ── Sidebar Navigation ── */}
       <aside className="settings-nav">
         <div className="settings-header-title">
-          <div className="settings-header-icon">⚙️</div>
+          <div className="settings-header-icon" style={{ background: 'transparent', boxShadow: 'none' }}>
+            <GensparkMark size={28} />
+          </div>
           <span>Paramètres</span>
         </div>
 
@@ -515,7 +533,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
           className={`settings-tab-btn${activeTab === 'profile' ? ' active' : ''}`}
           onClick={() => { setActiveTab('profile'); setStatusMsg(null); }}
         >
-          <span>👤</span>
+          <IconUser size={18} />
           <span>Mon profil</span>
         </button>
 
@@ -523,7 +541,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
           className={`settings-tab-btn${activeTab === 'ai-usage' ? ' active' : ''}`}
           onClick={() => { setActiveTab('ai-usage'); setStatusMsg(null); }}
         >
-          <span>📊</span>
+          <IconChart size={18} />
           <span>Consommation IA</span>
         </button>
 
@@ -531,7 +549,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
           className={`settings-tab-btn${activeTab === 'api-usage' ? ' active' : ''}`}
           onClick={() => { setActiveTab('api-usage'); setStatusMsg(null); }}
         >
-          <span>🔑</span>
+          <IconKey size={18} />
           <span>Consommation API</span>
         </button>
 
@@ -539,14 +557,14 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
           className={`settings-tab-btn${activeTab === 'preferences' ? ' active' : ''}`}
           onClick={() => { setActiveTab('preferences'); setStatusMsg(null); }}
         >
-          <span>🌍</span>
+          <IconGlobe size={18} />
           <span>Préférences et langue</span>
         </button>
 
         <div style={{ marginTop: 'auto', paddingTop: '16px', borderTop: '1px solid rgba(128,128,128,0.15)' }}>
           {onClose && (
             <button className="settings-tab-btn" onClick={onClose}>
-              <span>←</span>
+              <IconArrowLeft size={18} />
               <span>Retour à l'accueil</span>
             </button>
           )}
@@ -575,8 +593,13 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
               <p className="settings-card-sub">Personnalisez votre avatar visible dans l'application.</p>
 
               <div className="settings-avatar-row">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt={username} className="settings-avatar-img" />
+                {avatarUrl && !avatarLoadError ? (
+                  <img
+                    src={avatarUrl}
+                    alt={username}
+                    className="settings-avatar-img"
+                    onError={() => setAvatarLoadError(true)}
+                  />
                 ) : (
                   <div className="settings-avatar-initials">{initial}</div>
                 )}
@@ -704,7 +727,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
 
               {aiResetAt && (
                 <div style={{ marginTop: '16px', fontSize: '12px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>🔄</span>
+                  <IconRefresh size={14} />
                   <span>Réinitialisation le {new Date(aiResetAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               )}
@@ -759,15 +782,27 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
                           className="settings-btn settings-btn-secondary"
                           onClick={() => setShowApiKey((prev) => ({ ...prev, [k.api_key]: !prev[k.api_key] }))}
                           title={isVisible ? 'Masquer' : 'Afficher'}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 12px' }}
                         >
-                          {isVisible ? '🙈' : '👁️'}
+                          {isVisible ? <IconEyeOff size={16} /> : <IconEye size={16} />}
                         </button>
                         <button
                           className="settings-btn settings-btn-secondary"
                           onClick={() => copyToClipboard(k.api_key, k.api_key)}
                           title="Copier"
+                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px' }}
                         >
-                          {copiedKey === k.api_key ? '✓ Copié' : '📋 Copier'}
+                          {copiedKey === k.api_key ? (
+                            <>
+                              <IconCheck size={14} />
+                              <span>Copié</span>
+                            </>
+                          ) : (
+                            <>
+                              <IconCopy size={14} />
+                              <span>Copier</span>
+                            </>
+                          )}
                         </button>
                       </div>
                     </div>

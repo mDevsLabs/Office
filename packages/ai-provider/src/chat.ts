@@ -37,6 +37,7 @@ async function chatMaiCompatible(
   }
 
   // 3. Appel au modèle
+  const modelName = config.model || 'google/gemini-2.5-flash:free'
   const response = await fetch(`${MAI_API_BASE}/v1/chat/completions`, {
     method: 'POST',
     headers: {
@@ -44,7 +45,7 @@ async function chatMaiCompatible(
       Authorization: `Bearer ${config.apiKey}`,
     },
     body: JSON.stringify({
-      model: config.model,
+      model: modelName,
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { GensparkMark } from './icons'
 
 const API_URL = 'https://mai.val.run'
 
@@ -392,10 +393,8 @@ export function AuthModal({ onSuccess, onCancel }: AuthProps) {
           </button>
 
           <div className="auth-header">
-            <div className="auth-logo-badge">
-              <svg viewBox="0 0 24 24">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
+            <div className="auth-logo-badge" style={{ background: 'transparent', boxShadow: 'none' }}>
+              <GensparkMark size={48} />
             </div>
             <h3 className="auth-title">
               {view === 'signin'

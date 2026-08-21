@@ -70,14 +70,19 @@ export function AiComposer({
   const ref = textareaRef ?? innerRef
   const canSend = value.trim().length > 0 && !busy
 
-  const [internalModels, setInternalModels] = React.useState<{id: string, name: string}[]>([])
-  const [internalSelectedModel, setInternalSelectedModel] = React.useState('')
+  const [internalModels, setInternalModels] = React.useState<{ id: string; name: string }[]>([
+    { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash (free)' },
+    { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B Instruct (free)' },
+    { id: 'qwen/qwen-2.5-coder-32b-instruct:free', name: 'Qwen 2.5 Coder 32B (free)' },
+    { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (free)' },
+  ])
+  const [internalSelectedModel, setInternalSelectedModel] = React.useState(
+    () => localStorage.getItem('mai_model') || 'google/gemini-2.5-flash:free',
+  )
   const displayModels = models && models.length > 0 ? models : internalModels
-  const currentModel = selectedModel || internalSelectedModel
+  const currentModel = selectedModel || internalSelectedModel || 'google/gemini-2.5-flash:free'
 
   React.useEffect(() => {
-    if (models && models.length > 0) return;
-    
     async function fetchModels() {
       try {
         const apiKey = localStorage.getItem('mai_api_key') || localStorage.getItem('mai_token') || ''
@@ -88,20 +93,22 @@ export function AiComposer({
 
         const modelsRes = await fetch('https://mai.val.run/v1/models', { headers })
         const modelsData = await modelsRes.json()
-        if (modelsData && modelsData.data) {
+        if (modelsData && modelsData.data && modelsData.data.length > 0) {
           const list = modelsData.data.map((m: any) => ({ id: m.id, name: m.name || m.id }))
           setInternalModels(list)
-          if (list.length > 0 && !selectedModel) {
-            setInternalSelectedModel(list[0].id)
-            if (onModelChange) onModelChange(list[0].id)
-          }
+          const savedModel = localStorage.getItem('mai_model')
+          const isValidSaved = list.some((m: any) => m.id === savedModel)
+          const nextModel = isValidSaved && savedModel ? savedModel : (selectedModel || list[0].id)
+          setInternalSelectedModel(nextModel)
+          localStorage.setItem('mai_model', nextModel)
+          if (onModelChange) onModelChange(nextModel)
         }
       } catch (err) {
         console.error('Failed to fetch mAI models', err)
       }
     }
     fetchModels()
-  }, [models, selectedModel, onModelChange])
+  }, [])
 
   // auto-grow up to ~6 lines; empty clears the inline height outright so the
   // CSS min-height governs (a hidden-at-measure pass can leave a stale value).
@@ -142,25 +149,92 @@ export function AiComposer({
           onPasteFiles(files)
         }}
       />
-      <div className="ai-input-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div
+        className="ai-input-footer"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '6px',
+          padding: '6px 10px 8px',
+          minWidth: 0,
+          boxContent: 'border-box',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          className="ai-input-footer-left"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            minWidth: 0,
+            flex: '1 1 auto',
+            overflow: 'hidden',
+          }}
+        >
           {footerStart}
           {displayModels && displayModels.length > 0 && (
-            <select 
-              value={currentModel} 
-              onChange={(e) => {
-                setInternalSelectedModel(e.target.value);
-                if (onModelChange) onModelChange(e.target.value);
+            <div
+              className="ai-model-select-wrapper"
+              style={{
+                minWidth: 0,
+                maxWidth: '140px',
+                flex: '0 1 auto',
+                display: 'flex',
+                alignItems: 'center',
               }}
-              disabled={busy}
-              style={{ padding: '2px 8px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '12px', background: 'transparent', color: 'inherit' }}
             >
-              {displayModels.map(m => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}
-            </select>
+              <select
+                className="ai-model-select"
+                value={currentModel}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setInternalSelectedModel(val)
+                  localStorage.setItem('mai_model', val)
+                  if (onModelChange) onModelChange(val)
+                }}
+                disabled={busy}
+                title={`Modèle sélectionné : ${displayModels.find((m) => m.id === currentModel)?.name || currentModel}`}
+                style={{
+                  width: '100%',
+                  maxWidth: '140px',
+                  minWidth: '60px',
+                  height: '24px',
+                  padding: '0 6px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(128,128,128,0.25)',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  background: 'rgba(128,128,128,0.08)',
+                  color: 'inherit',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {displayModels.map((m) => (
+                  <option key={m.id} value={m.id} style={{ background: '#222', color: '#fff' }}>
+                    {m.name || m.id}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+        <div
+          className="ai-input-footer-right"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            flexShrink: 0,
+            marginLeft: 'auto',
+          }}
+        >
           {!iconOnly && (
             <span className="ai-input-hint" title={busy ? undefined : hintIdleTitle}>
               {busy ? hintBusy : hintIdle}
