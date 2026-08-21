@@ -62,7 +62,6 @@ const config = {
   extraMetadata: {
     version: rootPkg.version,
   },
-  homepage: 'https://github.com/mDevsLabs/mAI-Office',
   directories: {
     output: 'release',
   },
