@@ -56,6 +56,7 @@ const hasSigningIdentity = Boolean(process.env.CSC_LINK || process.env.CSC_NAME)
 const config = {
   appId: 'com.maioffice.app',
   productName: 'mAI Office',
+  executableName: 'mai-office',
   electronVersion: '41.7.1',
   directories: {
     output: 'release',
@@ -163,6 +164,7 @@ const config = {
     ],
   },
   linux: {
+    executableName: 'mai-office',
     target: [
       {
         target: 'AppImage',
