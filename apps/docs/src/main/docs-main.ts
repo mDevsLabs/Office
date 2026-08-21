@@ -2317,7 +2317,7 @@ export function registerAiIpc(): void {
     }
     const effectiveConfig = {
       ...config,
-      model: config.model || 'google/gemini-2.5-flash:free',
+      model: config.model || 'poolside/laguna-xs-2.1:free',
     }
     const controller = new AbortController()
     activeAiStreams.set(requestId, controller)
@@ -2400,7 +2400,7 @@ export function registerAiIpc(): void {
     }
     const effectiveConfig = {
       ...config,
-      model: config?.model || 'google/gemini-2.5-flash:free',
+      model: config?.model || 'poolside/laguna-xs-2.1:free',
     }
     try {
       return await chatForProvider(provider, effectiveConfig, system, user)

@@ -358,7 +358,7 @@ export async function streamOpenAiCompatible(
 ): Promise<void> {
   const cleanBase = baseUrl.replace(/\/$/, '')
   const endpoint = cleanBase.endsWith('/v1') ? `${cleanBase}/chat/completions` : `${cleanBase}/v1/chat/completions`
-  const modelName = config.model || 'google/gemini-2.5-flash:free'
+  const modelName = config.model || 'poolside/laguna-xs-2.1:free'
   const response = await fetch(endpoint, {
     method: 'POST',
     signal: cb.signal,
@@ -435,26 +435,6 @@ export async function streamOpenAiCompatible(
 
 import { MAI_API_BASE } from './providers'
 
-async function logUsage(config: AiProviderConfig, tokensUsed = 0): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const res = await fetch(`${MAI_API_BASE}/usage-log`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify({ tokensUsed }),
-    })
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}))
-      return { ok: false, error: data.error || 'Quota dépassé ou non autorisé' }
-    }
-    return { ok: true }
-  } catch (e: any) {
-    return { ok: false, error: e.message }
-  }
-}
-
 /** route a streaming, tool-calling-capable turn by provider id */
 export async function streamForProvider(
   provider: AiProviderId,
@@ -466,52 +446,20 @@ export async function streamForProvider(
   cb: StreamCallbacks,
 ): Promise<void> {
   if (provider === 'mai') {
-    // 1. Calcul estimé des tokens d'entrée (prompt)
-    let promptChars = system.length
-    for (const m of messages) {
-      if (m.role === 'user' && m.text) promptChars += m.text.length
-      else if (m.role === 'assistant' && m.text) promptChars += m.text.length
-    }
-    const promptTokens = Math.max(1, Math.round(promptChars / 4))
-
-    // 2. Vérification préliminaire du quota
-    const usageCheck = await logUsage(config, 0)
-    if (!usageCheck.ok) {
-      throw new Error(`Quota dépassé : ${usageCheck.error}`)
-    }
-
-    // 3. Suivi des caractères de sortie durant le streaming
-    let responseChars = 0
-    const wrappedCb: StreamCallbacks = {
-      ...cb,
-      onDelta: (text) => {
-        responseChars += text.length
-        cb.onDelta(text)
-      },
-    }
-
     const effectiveConfig: AiProviderConfig = {
       ...config,
-      model: config.model || 'google/gemini-2.5-flash:free',
+      model: config.model || 'poolside/laguna-xs-2.1:free',
     }
 
-    try {
-      await streamOpenAiCompatible(
-        `${MAI_API_BASE}/v1`,
-        effectiveConfig,
-        system,
-        messages,
-        tools,
-        maxTokens,
-        wrappedCb,
-      )
-    } finally {
-      // 4. Calcul et déduction de la somme des tokens (Prompt + Completion)
-      const completionTokens = Math.max(1, Math.round(responseChars / 4))
-      const totalTokens = promptTokens + completionTokens
-      void logUsage(effectiveConfig, totalTokens)
-    }
-    return
+    return streamOpenAiCompatible(
+      `${MAI_API_BASE}/v1`,
+      effectiveConfig,
+      system,
+      messages,
+      tools,
+      maxTokens,
+      cb,
+    )
   }
   throw new Error(`Unknown provider: ${provider}`)
 }

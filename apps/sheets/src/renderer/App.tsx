@@ -542,8 +542,9 @@ export function App(): React.JSX.Element {
     providers: {
       ...aiSettings.providers,
       mai: {
-        ...(aiSettings.providers?.mai || { model: '' }),
-        apiKey: localStorage.getItem('mai_token') || ''
+        ...(aiSettings.providers?.mai || {}),
+        apiKey: localStorage.getItem('mai_api_key') || localStorage.getItem('mai_token') || '',
+        model: localStorage.getItem('mai_model') || aiSettings.providers?.mai?.model || 'poolside/laguna-xs-2.1:free',
       }
     }
   } : null

@@ -9,10 +9,6 @@ import {
   IconGlobe,
   IconArrowLeft,
   IconRefresh,
-  IconEye,
-  IconEyeOff,
-  IconCopy,
-  IconCheck,
   GensparkMark,
 } from '@genoffice/ui'
 
@@ -54,11 +50,11 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // ── Profile State ──
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState(() => localStorage.getItem('mai_username') || '')
+  const [email, setEmail] = useState(() => localStorage.getItem('mai_email') || '')
   const [phone, setPhone] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
-  const [tier, setTier] = useState('Free')
+  const [avatarUrl, setAvatarUrl] = useState(() => localStorage.getItem('mai_avatar') || '')
+  const [tier, setTier] = useState(() => localStorage.getItem('mai_tier') || 'Free')
   const [newsletter, setNewsletter] = useState(false)
   const [notifyLimits, setNotifyLimits] = useState(true)
   const [currentPassword, setCurrentPassword] = useState('')
@@ -75,8 +71,6 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
 
   // ── API Usage State ──
   const [apiKeys, setApiKeys] = useState<any[]>([])
-  const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({})
-  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [appVersion, setAppVersion] = useState('0.1.0')
 
   // Load User & Usage Data
@@ -90,17 +84,21 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
       })
       if (usageRes.ok) {
         const u = await usageRes.json()
-        setUsername(u.username || '')
-        setEmail(u.email || '')
-        setPhone(u.phone || '')
-        setAvatarUrl(u.avatarUrl || '')
-        setTier(u.tier || 'Free')
+        if (u.username) setUsername(u.username)
+        if (u.email) setEmail(u.email)
+        if (u.phone) setPhone(u.phone)
+        if (u.avatarUrl) {
+          setAvatarUrl(u.avatarUrl)
+          setAvatarLoadError(false)
+          localStorage.setItem('mai_avatar', u.avatarUrl)
+        }
+        if (u.tier) setTier(u.tier)
         setAiTokensUsed(u.tokensUsed || 0)
         setAiLimit(u.limit || 2_000_000)
         setAiResetAt(u.resetAt || '')
-        if (u.avatarUrl) localStorage.setItem('mai_avatar', u.avatarUrl)
         if (u.username) localStorage.setItem('mai_username', u.username)
         if (u.tier) localStorage.setItem('mai_tier', u.tier)
+        window.dispatchEvent(new Event('mai_profile_updated'))
       }
 
       // 2. Load API Keys
@@ -152,9 +150,13 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Erreur lors de l'upload de l'avatar")
 
-      setAvatarUrl(data.avatarUrl)
-      setAvatarLoadError(false)
-      localStorage.setItem('mai_avatar', data.avatarUrl)
+      const newAvatarUrl = data.avatarUrl || data.url || ''
+      if (newAvatarUrl) {
+        setAvatarUrl(newAvatarUrl)
+        setAvatarLoadError(false)
+        localStorage.setItem('mai_avatar', newAvatarUrl)
+        window.dispatchEvent(new Event('mai_profile_updated'))
+      }
       setStatusMsg({ type: 'success', text: 'Photo de profil mise à jour avec succès !' })
     } catch (err: any) {
       setStatusMsg({ type: 'error', text: err.message })
@@ -242,14 +244,19 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
     }
   }
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text)
-    setCopiedKey(id)
-    setTimeout(() => setCopiedKey(null), 2000)
-  }
-
   const initial = username ? username[0].toUpperCase() : email ? email[0].toUpperCase() : 'U'
   const percentUsed = Math.min(100, Math.round((aiTokensUsed / (aiLimit || 1)) * 100))
+  const totalApiRequests = apiKeys.reduce((acc, k) => acc + (k.request_count || 0), 0)
+  const apiLimit = tier === 'Max' ? 1_000_000 : tier === 'Pro' ? 200_000 : tier === 'Plus' ? 50_000 : 10_000
+  const apiPercentUsed = Math.min(100, Math.round((totalApiRequests / (apiLimit || 1)) * 100))
+
+  const getFullAvatarUrl = (url: string) => {
+    if (!url) return ''
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url
+    }
+    return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`
+  }
 
   return (
     <div className="settings-page">
@@ -595,8 +602,8 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
               <div className="settings-avatar-row">
                 {avatarUrl && !avatarLoadError ? (
                   <img
-                    src={avatarUrl}
-                    alt={username}
+                    src={getFullAvatarUrl(avatarUrl)}
+                    alt={username || 'Photo de profil'}
                     className="settings-avatar-img"
                     onError={() => setAvatarLoadError(true)}
                   />
@@ -722,7 +729,7 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
 
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#71717a' }}>
                 <span>{percentUsed}% consommés</span>
-                <span>{(aiLimit - aiTokensUsed).toLocaleString()} restants</span>
+                <span>{Math.max(0, aiLimit - aiTokensUsed).toLocaleString()} restants</span>
               </div>
 
               {aiResetAt && (
@@ -757,72 +764,58 @@ export function SettingsView({ onClose, initialTab = 'profile' }: SettingsViewPr
         {activeTab === 'api-usage' && (
           <div style={{ maxWidth: '640px' }}>
             <div className="settings-card">
-              <h3 className="settings-card-title">Clé API Développeur</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <h3 className="settings-card-title" style={{ margin: 0 }}>Quota Mensuel de Requêtes API</h3>
+                <span className={`settings-badge settings-badge-${tier.toLowerCase()}`}>Forfait {tier}</span>
+              </div>
               <p className="settings-card-sub">
-                Utilisez votre clé API pour intégrer mAI dans vos propres applications ou requêter l'API via <code>https://mai.val.run/v1</code>.
+                Chaque appel effectué vers les modèles et services mAI consomme une requête de votre quota API.
               </p>
 
-              {apiKeys.length === 0 ? (
-                <div style={{ color: '#71717a', fontSize: '14px' }}>Aucune clé API trouvée.</div>
-              ) : (
-                apiKeys.map((k) => {
-                  const isVisible = showApiKey[k.api_key]
-                  const displayVal = isVisible ? k.api_key : k.api_key.substring(0, 10) + '••••••••••••••••••••••••'
-                  return (
-                    <div key={k.api_key} style={{ background: '#f4f4f5', padding: '16px', borderRadius: '12px', marginBottom: '14px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 600 }}>Clé mProjects ({k.plan || 'Free'})</span>
-                        <span style={{ fontSize: '12px', color: '#71717a' }}>{k.request_count || 0} requêtes ce mois</span>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <code style={{ flex: 1, padding: '8px 12px', background: '#ffffff', borderRadius: '8px', border: '1px solid #d4d4d8', fontSize: '13px', fontFamily: 'monospace' }}>
-                          {displayVal}
-                        </code>
-                        <button
-                          className="settings-btn settings-btn-secondary"
-                          onClick={() => setShowApiKey((prev) => ({ ...prev, [k.api_key]: !prev[k.api_key] }))}
-                          title={isVisible ? 'Masquer' : 'Afficher'}
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px 12px' }}
-                        >
-                          {isVisible ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-                        </button>
-                        <button
-                          className="settings-btn settings-btn-secondary"
-                          onClick={() => copyToClipboard(k.api_key, k.api_key)}
-                          title="Copier"
-                          style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px' }}
-                        >
-                          {copiedKey === k.api_key ? (
-                            <>
-                              <IconCheck size={14} />
-                              <span>Copié</span>
-                            </>
-                          ) : (
-                            <>
-                              <IconCopy size={14} />
-                              <span>Copier</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 600 }}>
+                <span>{totalApiRequests.toLocaleString()} requêtes utilisées</span>
+                <span style={{ color: '#71717a' }}>{apiLimit.toLocaleString()} max</span>
+              </div>
+
+              <div className="settings-progress-track">
+                <div
+                  className="settings-progress-fill"
+                  style={{
+                    width: `${apiPercentUsed}%`,
+                    background: apiPercentUsed > 90 ? '#ef4444' : undefined,
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#71717a' }}>
+                <span>{apiPercentUsed}% consommés</span>
+                <span>{Math.max(0, apiLimit - totalApiRequests).toLocaleString()} restantes</span>
+              </div>
+
+              {aiResetAt && (
+                <div style={{ marginTop: '16px', fontSize: '12px', color: '#6366f1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <IconRefresh size={14} />
+                  <span>Réinitialisation le {new Date(aiResetAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
               )}
             </div>
 
             <div className="settings-card">
-              <h3 className="settings-card-title">Documentation Rapide</h3>
-              <p className="settings-card-sub">Exemple d'appel cURL vers l'API mAI :</p>
-              <pre style={{ background: '#18181b', color: '#f4f4f5', padding: '14px', borderRadius: '10px', fontSize: '12px', overflowX: 'auto' }}>
-{`curl https://mai.val.run/v1/chat/completions \\
-  -H "Authorization: Bearer ${apiKeys[0]?.api_key || 'VOTRE_CLE_API'}" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "model": "google/gemini-2.5-flash:free",
-    "messages": [{"role": "user", "content": "Bonjour !"}]
-  }'`}
-              </pre>
+              <h3 className="settings-card-title">Code de Surclassement API</h3>
+              <p className="settings-card-sub">Augmentez vos quotas de requêtes API avec votre code d'accès.</p>
+
+              <form onSubmit={handleUpgradeCode} style={{ display: 'flex', gap: '12px' }}>
+                <input
+                  className="settings-input"
+                  style={{ textTransform: 'uppercase', letterSpacing: '1px' }}
+                  placeholder="EX: PLUS2026"
+                  value={upgradeCode}
+                  onChange={(e) => setUpgradeCode(e.target.value)}
+                />
+                <button type="submit" className="settings-btn settings-btn-primary" disabled={upgrading || !upgradeCode.trim()}>
+                  {upgrading ? 'Vérification...' : 'Appliquer'}
+                </button>
+              </form>
             </div>
           </div>
         )}

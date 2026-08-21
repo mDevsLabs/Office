@@ -291,8 +291,8 @@ export function AiPanel({
   const currentSettings = { ...settings }
   if (!currentSettings.providers) currentSettings.providers = {}
   if (!currentSettings.providers.mai) currentSettings.providers.mai = { apiKey: '', model: '' }
-  currentSettings.providers.mai.apiKey = localStorage.getItem('mai_token') || ''
-  currentSettings.providers.mai.model = localStorage.getItem('mai_model') || 'google/gemini-2.5-flash:free'
+  currentSettings.providers.mai.apiKey = localStorage.getItem('mai_api_key') || localStorage.getItem('mai_token') || ''
+  currentSettings.providers.mai.model = localStorage.getItem('mai_model') || 'poolside/laguna-xs-2.1:free'
 
   const settingsRef = useRef(currentSettings)
   settingsRef.current = currentSettings

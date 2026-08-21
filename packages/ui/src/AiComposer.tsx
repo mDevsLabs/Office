@@ -71,16 +71,16 @@ export function AiComposer({
   const canSend = value.trim().length > 0 && !busy
 
   const [internalModels, setInternalModels] = React.useState<{ id: string; name: string }[]>([
-    { id: 'google/gemini-2.5-flash:free', name: 'Gemini 2.5 Flash (free)' },
-    { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B Instruct (free)' },
-    { id: 'qwen/qwen-2.5-coder-32b-instruct:free', name: 'Qwen 2.5 Coder 32B (free)' },
-    { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (free)' },
+    { id: 'poolside/laguna-xs-2.1:free', name: 'Poolside Laguna XS 2.1 (free)' },
+    { id: 'poolside/laguna-s-2.1:free', name: 'Poolside Laguna S 2.1 (free)' },
+    { id: 'google/gemma-4-26b-a4b-it:free', name: 'Google Gemma 4 26B (free)' },
+    { id: 'openai/gpt-oss-20b:free', name: 'OpenAI GPT OSS 20B (free)' },
   ])
   const [internalSelectedModel, setInternalSelectedModel] = React.useState(
-    () => localStorage.getItem('mai_model') || 'google/gemini-2.5-flash:free',
+    () => localStorage.getItem('mai_model') || 'poolside/laguna-xs-2.1:free',
   )
   const displayModels = models && models.length > 0 ? models : internalModels
-  const currentModel = selectedModel || internalSelectedModel || 'google/gemini-2.5-flash:free'
+  const currentModel = selectedModel || internalSelectedModel || 'poolside/laguna-xs-2.1:free'
 
   React.useEffect(() => {
     async function fetchModels() {

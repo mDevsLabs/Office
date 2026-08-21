@@ -418,6 +418,14 @@ const LANG_OPTIONS = [
   { value: 'zh-TW', label: '繁體中文' },
 ] as const
 
+const getFullAvatarUrl = (url: string) => {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url
+  }
+  return `https://mai.val.run${url.startsWith('/') ? '' : '/'}${url}`
+}
+
 function AccountEntry({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const { lang, setLang, t } = useI18n()
   const [status, setStatus] = useState<AccountStatus | null>(null)
@@ -428,6 +436,7 @@ function AccountEntry({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [avatarUrl, setAvatarUrl] = useState(() => localStorage.getItem('mai_avatar') || '')
   const [username, setUsername] = useState(() => localStorage.getItem('mai_username') || '')
+  const [avatarError, setAvatarError] = useState(false)
 
   // language flyout: opens on hover, fixed-position so it can escape the
   // sidebar's scroll container (same trick as the project row menu)
@@ -442,27 +451,66 @@ function AccountEntry({ onOpenSettings }: { onOpenSettings?: () => void }) {
   // query login state + app version once on mount
   useEffect(() => {
     let alive = true
-    const maiToken = localStorage.getItem('mai_token')
-    const maiEmail = localStorage.getItem('mai_email')
-    const maiAvatar = localStorage.getItem('mai_avatar')
-    const maiUsername = localStorage.getItem('mai_username')
+    const syncFromStorage = () => {
+      const maiToken = localStorage.getItem('mai_token')
+      const maiEmail = localStorage.getItem('mai_email')
+      const maiAvatar = localStorage.getItem('mai_avatar')
+      const maiUsername = localStorage.getItem('mai_username')
 
-    if (maiAvatar) setAvatarUrl(maiAvatar)
-    if (maiUsername) setUsername(maiUsername)
-    
+      if (maiAvatar) {
+        setAvatarUrl(maiAvatar)
+        setAvatarError(false)
+      }
+      if (maiUsername) setUsername(maiUsername)
+      if (maiToken) {
+        setStatus({ loggedIn: true, email: maiEmail || '' })
+      }
+    }
+
+    syncFromStorage()
+
+    const maiToken = localStorage.getItem('mai_token')
     if (maiToken) {
-      setStatus({ loggedIn: true, email: maiEmail || '' })
+      // Fetch latest profile & avatar from API
+      fetch('https://mai.val.run/usage', {
+        headers: { Authorization: `Bearer ${maiToken}` },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!alive || !data) return
+          if (data.avatarUrl) {
+            setAvatarUrl(data.avatarUrl)
+            setAvatarError(false)
+            localStorage.setItem('mai_avatar', data.avatarUrl)
+          }
+          if (data.username) {
+            setUsername(data.username)
+            localStorage.setItem('mai_username', data.username)
+          }
+          if (data.email) {
+            setStatus({ loggedIn: true, email: data.email })
+            localStorage.setItem('mai_email', data.email)
+          }
+        })
+        .catch(() => {})
     } else {
       void window.aiOffice.accountStatus?.().then((s) => {
         if (alive) setStatus(s)
       })
     }
-    
+
     void window.aiOffice.getAppVersion?.().then((v) => {
       if (alive && v) setAppVersion(v)
     })
+
+    const onProfileUpdated = () => syncFromStorage()
+    window.addEventListener('mai_profile_updated', onProfileUpdated)
+    window.addEventListener('storage', onProfileUpdated)
+
     return () => {
       alive = false
+      window.removeEventListener('mai_profile_updated', onProfileUpdated)
+      window.removeEventListener('storage', onProfileUpdated)
     }
   }, [])
 
@@ -475,7 +523,10 @@ function AccountEntry({ onOpenSettings }: { onOpenSettings?: () => void }) {
       const maiEmail = localStorage.getItem('mai_email')
       const maiAvatar = localStorage.getItem('mai_avatar')
       const maiUsername = localStorage.getItem('mai_username')
-      if (maiAvatar) setAvatarUrl(maiAvatar)
+      if (maiAvatar) {
+        setAvatarUrl(maiAvatar)
+        setAvatarError(false)
+      }
       if (maiUsername) setUsername(maiUsername)
       
       if (maiToken) {
@@ -777,8 +828,13 @@ function AccountEntry({ onOpenSettings }: { onOpenSettings?: () => void }) {
                 strokeLinecap="round"
               />
             </svg>
-          ) : avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : avatarUrl && !avatarError ? (
+            <img
+              src={getFullAvatarUrl(avatarUrl)}
+              alt={displayName}
+              onError={() => setAvatarError(true)}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', borderRadius: '50%' }}
+            />
           ) : (
             initial
           )}
@@ -813,6 +869,19 @@ function AccountEntry({ onOpenSettings }: { onOpenSettings?: () => void }) {
               setUsername(regUsername)
             }
             setStatus({ loggedIn: true, email: userEmail })
+            fetch('https://mai.val.run/usage', {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+              .then((res) => (res.ok ? res.json() : null))
+              .then((data) => {
+                if (data?.avatarUrl) {
+                  setAvatarUrl(data.avatarUrl)
+                  setAvatarError(false)
+                  localStorage.setItem('mai_avatar', data.avatarUrl)
+                  window.dispatchEvent(new Event('mai_profile_updated'))
+                }
+              })
+              .catch(() => {})
           }}
           onCancel={() => setShowAuth(false)}
         />
