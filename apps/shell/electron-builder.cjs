@@ -35,6 +35,23 @@ for (const rel of [
   }
 }
 
+function resolveWinSidecar() {
+  const defaultPath = '../sheets/native/xlsx-engine/target/release/xlsx-sidecar.exe'
+  const gnuPath = '../sheets/native/xlsx-engine/target/x86_64-pc-windows-gnu/release/xlsx-sidecar.exe'
+  if (existsSync(join(__dirname, defaultPath))) return defaultPath
+  if (existsSync(join(__dirname, gnuPath))) return gnuPath
+  return defaultPath
+}
+
+const unixSidecar = '../sheets/native/xlsx-engine/target/release/xlsx-sidecar'
+
+const hasAppleCreds = Boolean(
+  process.env.APPLE_KEYCHAIN_PROFILE ||
+  (process.env.APPLE_ID && process.env.APPLE_APP_SPECIFIC_PASSWORD && process.env.APPLE_TEAM_ID)
+)
+const skipNotarize = process.env.ELECTRON_BUILDER_SKIP_NOTARIZE === 'true' || !hasAppleCreds
+const hasSigningIdentity = Boolean(process.env.CSC_LINK || process.env.CSC_NAME)
+
 /** @type {import('electron-builder').Configuration} */
 const config = {
   appId: 'com.maioffice.app',
@@ -118,14 +135,15 @@ const config = {
   mac: {
     target: ['dmg', 'zip'],
     category: 'public.app-category.productivity',
-    hardenedRuntime: true,
+    hardenedRuntime: hasSigningIdentity,
     gatekeeperAssess: false,
     entitlements: 'build/entitlements.mac.plist',
     entitlementsInherit: 'build/entitlements.mac.plist',
-    notarize: true,
+    notarize: !skipNotarize,
+    identity: hasSigningIdentity ? undefined : null,
     extraResources: [
       {
-        from: '../sheets/native/xlsx-engine/target/release/xlsx-sidecar',
+        from: unixSidecar,
         to: 'native/xlsx-sidecar',
       },
     ],
@@ -139,8 +157,31 @@ const config = {
     ],
     extraResources: [
       {
-        from: '../sheets/native/xlsx-engine/target/x86_64-pc-windows-gnu/release/xlsx-sidecar.exe',
+        from: resolveWinSidecar(),
         to: 'native/xlsx-sidecar.exe',
+      },
+    ],
+  },
+  linux: {
+    target: [
+      {
+        target: 'AppImage',
+        arch: ['x64'],
+      },
+      {
+        target: 'deb',
+        arch: ['x64'],
+      },
+      {
+        target: 'tar.gz',
+        arch: ['x64'],
+      },
+    ],
+    category: 'Office',
+    extraResources: [
+      {
+        from: unixSidecar,
+        to: 'native/xlsx-sidecar',
       },
     ],
   },
@@ -149,9 +190,9 @@ const config = {
     allowToChangeInstallationDirectory: true,
   },
   dmg: {
-    sign: true,
+    sign: hasSigningIdentity,
   },
-  afterAllArtifactBuild: 'build/notarize-dmg.js',
+  ...(skipNotarize ? {} : { afterAllArtifactBuild: 'build/notarize-dmg.js' }),
 }
 
 if (updateUrl) {

@@ -52,7 +52,12 @@ function extraResourceSeeds() {
   // the electron-builder config lives in its own cjs module (not package.json
   // "build") so the publish URL can be injected from the environment
   const build = require(join(ROOT, 'apps/shell/electron-builder.cjs'))
-  const entries = [build.extraResources, build.mac?.extraResources, build.win?.extraResources]
+  const entries = [
+    build.extraResources,
+    build.mac?.extraResources,
+    build.win?.extraResources,
+    build.linux?.extraResources,
+  ]
   const names = []
   for (const e of entries.flat()) {
     const m = e?.from && /node_modules\/((?:@[^/]+\/)?[^/]+)$/.exec(e.from)

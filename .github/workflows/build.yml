@@ -16,12 +16,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
@@ -40,17 +40,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate third-party notices
+        run: npm run notices
+
       - name: Build all packages
         run: npm run build:all
 
       - name: Build macOS installer
         env:
           GENOFFICE_UPDATE_URL: ${{ vars.GENOFFICE_UPDATE_URL }}
-          ELECTRON_BUILDER_SKIP_NOTARIZE: true
+          CSC_LINK: ''
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+          ELECTRON_BUILDER_SKIP_NOTARIZE: 'true'
         run: |
           cd apps/shell
-          echo '{"electronVersion":"41.0.3","mac":{"hardenedRuntime":false},"dmg":{"sign":false}}' > electron-builder-unsigned.json
-          npm run dist:mac -- --config electron-builder-unsigned.json
+          npm run dist:mac
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -66,12 +70,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
@@ -89,6 +93,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate third-party notices
+        run: npm run notices
 
       - name: Build all packages
         run: npm run build:all
@@ -105,5 +112,56 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: mAI Office-Windows
+          path: apps/shell/release/**
+          compression-level: 0
+
+  build-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2.9.1
+        with:
+          workspaces: apps/sheets/native/xlsx-engine
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate third-party notices
+        run: npm run notices
+
+      - name: Build all packages
+        run: npm run build:all
+
+      - name: Build Linux installer
+        env:
+          GENOFFICE_UPDATE_URL: ${{ vars.GENOFFICE_UPDATE_URL }}
+        run: |
+          cd apps/shell
+          npm run dist:linux
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mAI Office-Linux
           path: apps/shell/release/**
           compression-level: 0
